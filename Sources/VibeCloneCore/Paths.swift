@@ -14,6 +14,7 @@ public struct Paths: Sendable {
     public var bridgeCache: URL     { binDir.appendingPathComponent(".bridge-cache") }
     public var orphanedFlag: URL    { dotDir.appendingPathComponent(".orphaned") }
     public var lastRun: URL         { runDir.appendingPathComponent("vibeclone.lastrun") }
+    public var config: URL          { dotDir.appendingPathComponent("config.json") }
 
     public var appSupport: URL      { home.appendingPathComponent("Library/Application Support/vibeclone", isDirectory: true) }
     public var sessionTerminals: URL { appSupport.appendingPathComponent("session-terminals.json") }
