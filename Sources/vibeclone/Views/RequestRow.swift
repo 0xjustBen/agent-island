@@ -23,6 +23,7 @@ struct RequestRow: View {
                 }
             }
             inputPreview
+            planPreview
             HStack {
                 Button("Jump", action: onJump)
                 Spacer()
@@ -49,6 +50,27 @@ struct RequestRow: View {
         }
         .frame(maxHeight: 100)
         .background(RoundedRectangle(cornerRadius: 4).fill(.black.opacity(0.06)))
+    }
+
+    @ViewBuilder private var planPreview: some View {
+        if let md = planSource {
+            DisclosureGroup("Plan preview") {
+                Text(MarkdownRenderer.render(md))
+                    .font(.callout)
+                    .padding(.vertical, 4)
+            }
+        }
+    }
+
+    private var planSource: String? {
+        // Plan-mode CC payloads include the assistant's plan text. Heuristic:
+        // tool_input.plan, tool_input.prompt, or payload.plan as a long string.
+        if case .object(let input) = request.payload["tool_input"] ?? .null {
+            if case .string(let s) = input["plan"] ?? .null, s.count > 20 { return s }
+            if case .string(let s) = input["prompt"] ?? .null, s.count > 60 { return s }
+        }
+        if case .string(let s) = request.payload["plan"] ?? .null, s.count > 20 { return s }
+        return nil
     }
 
     private var previewText: String {

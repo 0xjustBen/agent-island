@@ -81,20 +81,39 @@ struct NotchView: View {
         return "?"
     }
 
+    @ViewBuilder
     private func preview(_ r: PermissionRequest) -> some View {
-        let text: String = {
-            if case .object(let input) = r.payload["tool_input"] ?? .null,
-               case .string(let cmd) = input["command"] ?? .null {
-                return cmd
-            }
-            return ""
-        }()
-        return Text(text)
-            .lineLimit(3)
-            .font(.system(.callout, design: .monospaced))
-            .padding(8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.10)))
+        if let md = planSource(r) {
+            Text(MarkdownRenderer.render(md))
+                .lineLimit(5)
+                .font(.callout)
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.10)))
+        } else {
+            let text: String = {
+                if case .object(let input) = r.payload["tool_input"] ?? .null,
+                   case .string(let cmd) = input["command"] ?? .null {
+                    return cmd
+                }
+                return ""
+            }()
+            Text(text)
+                .lineLimit(3)
+                .font(.system(.callout, design: .monospaced))
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.10)))
+        }
+    }
+
+    private func planSource(_ r: PermissionRequest) -> String? {
+        if case .object(let input) = r.payload["tool_input"] ?? .null {
+            if case .string(let s) = input["plan"] ?? .null, s.count > 20 { return s }
+            if case .string(let s) = input["prompt"] ?? .null, s.count > 60 { return s }
+        }
+        if case .string(let s) = r.payload["plan"] ?? .null, s.count > 20 { return s }
+        return nil
     }
 
     // MARK: - Top padding tuning
