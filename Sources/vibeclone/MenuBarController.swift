@@ -2,6 +2,7 @@ import SwiftUI
 import VibeCloneCore
 import VibeCloneAdapters
 import VibeCloneLauncher
+import VibeCloneTerminals
 
 @Observable
 @MainActor
@@ -21,6 +22,7 @@ final class MenuBarController {
     let router: EventRouter
     let server: SocketServer
     let installer: HookInstaller
+    private let jumper = ITerm2Jumper()
     private var refreshTask: Task<Void, Never>?
 
     init() {
@@ -90,7 +92,11 @@ final class MenuBarController {
     }
 
     func jump(_ request: PermissionRequest) {
-        // Task 18 wires real ITerm2Jumper. For now, no-op.
+        let loc = request.locator
+        Task {
+            do { try await jumper.jump(to: loc) }
+            catch { NSLog("vibeclone: jump failed: \(error)") }
+        }
     }
 
     func shutdown() {
