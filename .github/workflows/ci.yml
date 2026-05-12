@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, phase-1]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: |
+          # macos-14 ships Xcode 15 by default; pick latest 16.x if available.
+          if [ -d /Applications/Xcode_16.0.app ]; then
+            sudo xcode-select -s /Applications/Xcode_16.0.app
+          fi
+          xcodebuild -version
+          swift --version
+
+      - name: Cache SwiftPM build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+
+      - name: Resolve dependencies
+        run: swift package resolve
+
+      - name: Run tests
+        run: swift test --parallel
+
+      - name: Build app + bridge (universal)
+        run: bash scripts/build-app.sh release
+
+      - name: Hook-install assertion
+        run: |
+          # Spin up app in a temp HOME, verify hooks land correctly. App auto-quits
+          # after a short window because we kill the process.
+          export TEST_HOME=$(mktemp -d)
+          HOME="$TEST_HOME" build/VibeClone.app/Contents/MacOS/vibeclone &
+          PID=$!
+          sleep 5
+          kill $PID 2>/dev/null || true
+
+          # Assert launcher script exists.
+          test -x "$TEST_HOME/.vibeclone/bin/vibeclone-bridge"
+
+          # Assert 11 hook entries present.
+          python3 -c "
+          import json, sys
+          d = json.load(open('$TEST_HOME/.claude/settings.json'))
+          hooks = d.get('hooks', {})
+          assert len(hooks) == 11, f'expected 11 events, got {len(hooks)}: {sorted(hooks)}'
+          perm = hooks['PermissionRequest'][0]['hooks'][0]
+          assert perm['timeout'] == 86400, f'PermissionRequest timeout != 86400: {perm}'
+          assert 'vibeclone-bridge' in perm['command']
+          print('hook-install OK: 11 events, PermissionRequest timeout 86400')
+          "
