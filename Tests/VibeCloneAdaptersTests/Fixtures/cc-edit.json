@@ -1,0 +1,7 @@
+{
+  "session_id": "abc-123",
+  "tool_name": "Edit",
+  "tool_input": {"file_path": "/tmp/a.txt", "old_string": "x", "new_string": "y"},
+  "cwd": "/Users/ben/proj",
+  "hook_event_name": "PreToolUse"
+}

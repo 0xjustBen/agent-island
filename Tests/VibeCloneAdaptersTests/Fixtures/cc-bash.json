@@ -1,0 +1,7 @@
+{
+  "session_id": "abc-123",
+  "tool_name": "Bash",
+  "tool_input": {"command": "ls -la", "description": "list files"},
+  "cwd": "/Users/ben/proj",
+  "hook_event_name": "PreToolUse"
+}
