@@ -23,7 +23,11 @@ let package = Package(
         .target(name: "VibeCloneTerminals", dependencies: ["VibeCloneCore"]),
         .testTarget(name: "VibeCloneCoreTests", dependencies: ["VibeCloneCore"]),
         .testTarget(name: "VibeCloneAdaptersTests", dependencies: ["VibeCloneAdapters"],
-                    resources: [.copy("Fixtures")]),
+                    resources: [
+                        .copy("Fixtures/settings-empty.json"),
+                        .copy("Fixtures/settings-with-comments.jsonc"),
+                        .copy("Fixtures/settings-with-existing-hooks.json"),
+                    ]),
         .testTarget(name: "VibeCloneLauncherTests", dependencies: ["VibeCloneLauncher"]),
         .testTarget(name: "VibeCloneTerminalsTests", dependencies: ["VibeCloneTerminals"]),
     ]

@@ -1,0 +1,6 @@
+// User comment at top
+{
+  "model": "sonnet",
+  // inline comment
+  "hooks": {}
+}
