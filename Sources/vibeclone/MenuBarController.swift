@@ -89,6 +89,10 @@ final class MenuBarController {
         Task { await queue.resolve(id: request.id, with: ApprovalResponse(decision: .deny, reason: reason)) }
     }
 
+    func jump(_ request: PermissionRequest) {
+        // Task 18 wires real ITerm2Jumper. For now, no-op.
+    }
+
     func shutdown() {
         // Mark clean exit + stop everything.
         refreshTask?.cancel()
