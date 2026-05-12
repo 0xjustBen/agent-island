@@ -9,6 +9,8 @@ let package = Package(
         .library(name: "VibeCloneAdapters", targets: ["VibeCloneAdapters"]),
         .library(name: "VibeCloneLauncher", targets: ["VibeCloneLauncher"]),
         .library(name: "VibeCloneTerminals", targets: ["VibeCloneTerminals"]),
+        .executable(name: "vibeclone", targets: ["vibeclone"]),
+        .executable(name: "vibeclone-bridge", targets: ["vibeclone-bridge"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
@@ -21,6 +23,12 @@ let package = Package(
         .target(name: "VibeCloneAdapters", dependencies: ["VibeCloneCore"]),
         .target(name: "VibeCloneLauncher", dependencies: ["VibeCloneCore"]),
         .target(name: "VibeCloneTerminals", dependencies: ["VibeCloneCore"]),
+        .executableTarget(name: "vibeclone", dependencies: [
+            "VibeCloneCore", "VibeCloneAdapters", "VibeCloneLauncher", "VibeCloneTerminals",
+        ]),
+        .executableTarget(name: "vibeclone-bridge", dependencies: [
+            "VibeCloneCore", "VibeCloneAdapters",
+        ]),
         .testTarget(name: "VibeCloneCoreTests", dependencies: ["VibeCloneCore"]),
         .testTarget(name: "VibeCloneAdaptersTests", dependencies: ["VibeCloneAdapters"],
                     resources: [
