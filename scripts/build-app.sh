@@ -33,6 +33,12 @@ cp "$BIN_DIR/vibeclone" "$APP/Contents/MacOS/vibeclone"
 cp "$BIN_DIR/vibeclone-bridge" "$APP/Contents/Helpers/vibeclone-bridge"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 
+# Ensure bundled sounds exist, generate if missing.
+if [ ! -f "$ROOT/Resources/Sounds/permission.aiff" ]; then
+    bash "$ROOT/scripts/gen-sounds.sh"
+fi
+cp -R "$ROOT/Resources/Sounds" "$APP/Contents/Resources/Sounds"
+
 chmod +x "$APP/Contents/MacOS/vibeclone" "$APP/Contents/Helpers/vibeclone-bridge"
 
 # Sign nested executable FIRST, then bundle. --deep is deprecated; sign explicitly.

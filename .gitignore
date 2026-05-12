@@ -5,3 +5,4 @@ build/
 *.xcworkspace/xcuserdata/
 DerivedData/
 .DS_Store
+Resources/Sounds/*.aiff
