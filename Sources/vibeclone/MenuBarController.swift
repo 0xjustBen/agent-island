@@ -22,7 +22,7 @@ final class MenuBarController {
     let router: EventRouter
     let server: SocketServer
     let installer: HookInstaller
-    private let jumper = ITerm2Jumper()
+    private let jumper = CompositeJumper.default()
     private var refreshTask: Task<Void, Never>?
 
     init() {
