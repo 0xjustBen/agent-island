@@ -12,6 +12,12 @@ public actor EventRouter {
     private let history: any HistoryRecording
     private let adapter: any AgentAdapter
 
+    public var onEventArrived: (@Sendable (EventName) -> Void)?
+
+    public func setOnEventArrived(_ closure: @escaping @Sendable (EventName) -> Void) {
+        self.onEventArrived = closure
+    }
+
     public init(queue: ApprovalQueue,
                 sessions: ActiveSessions,
                 history: any HistoryRecording,
@@ -24,6 +30,7 @@ public actor EventRouter {
 
     /// Route a request for the given event. Always returns a stdout body for the bridge.
     public func route(event: EventName, request: PermissionRequest) async -> EventHandlingResult {
+        onEventArrived?(event)
         let started = Date()
         switch event {
         case .permissionRequest:

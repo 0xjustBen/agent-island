@@ -24,6 +24,9 @@ final class MenuBarController {
     let installer: HookInstaller
     private let jumper = CompositeJumper.default()
     private var refreshTask: Task<Void, Never>?
+    private(set) var panelController: PanelController!
+    private(set) var soundPlayer: SoundPlayer!
+    private var lastPendingCount: Int = -1
 
     init() {
         let p = Paths()
@@ -61,11 +64,25 @@ final class MenuBarController {
         let prefsRef = { [weak self] in self?.prefs.autoHealHooks ?? true }
         installer.startHealing(enabled: { @MainActor in prefsRef() })
 
+        self.soundPlayer = SoundPlayer(paths: paths)
+        self.panelController = PanelController(controller: self)
+
+        let routerRef = self.router
+        Task { [weak self] in
+            await routerRef.setOnEventArrived { @Sendable event in
+                Task { @MainActor in
+                    self?.handleEventArrived(event)
+                }
+            }
+        }
+
         do {
             try server.start()
         } catch {
             NSLog("vibeclone: server start failed: \(error)")
         }
+
+        panelController.updateForMode(prefs.displayMode)
 
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -77,9 +94,27 @@ final class MenuBarController {
                     self.pendingCount = count
                     self.pending = list
                     self.activeSessionsCount = active
+                    if count != self.lastPendingCount {
+                        self.lastPendingCount = count
+                        self.panelController?.refresh()
+                    }
                 }
                 try? await Task.sleep(for: .milliseconds(200))
             }
+        }
+    }
+
+    @MainActor
+    private func handleEventArrived(_ event: EventName) {
+        switch event {
+        case .permissionRequest:
+            soundPlayer.play(.permission, enabled: prefs.soundsEnabled)
+        case .notification:
+            soundPlayer.play(.notification, enabled: prefs.soundsEnabled)
+        case .stop:
+            soundPlayer.play(.idle, enabled: prefs.soundsEnabled)
+        default:
+            break
         }
     }
 

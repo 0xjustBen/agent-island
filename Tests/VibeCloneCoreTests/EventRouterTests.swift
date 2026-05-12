@@ -87,6 +87,29 @@ private func mkReq(_ id: String, sid: String = "sess1", source: String = "claude
     #expect(n == 0)
 }
 
+@Test func onEventArrived_callback_fires_for_each_event() async throws {
+    let q = ApprovalQueue(); let s = ActiveSessions(); let h = FakeHistory()
+    let r = EventRouter(queue: q, sessions: s, history: h, adapter: FakeAdapter())
+
+    actor Collector {
+        var events: [EventName] = []
+        func add(_ e: EventName) { events.append(e) }
+        func snapshot() -> [EventName] { events }
+    }
+    let collector = Collector()
+    await r.setOnEventArrived { e in Task { await collector.add(e) } }
+
+    _ = await r.route(event: .sessionStart, request: mkReq("r1"))
+    _ = await r.route(event: .postToolUse, request: mkReq("r2"))
+    _ = await r.route(event: .stop, request: mkReq("r3"))
+
+    // Let detached tasks finish.
+    try await Task.sleep(for: .milliseconds(100))
+
+    let snap = await collector.snapshot()
+    #expect(snap == [.sessionStart, .postToolUse, .stop])
+}
+
 @Test func record_only_events_produce_empty_body() async throws {
     let q = ApprovalQueue(); let s = ActiveSessions(); let h = FakeHistory()
     let r = EventRouter(queue: q, sessions: s, history: h, adapter: FakeAdapter())
