@@ -108,13 +108,53 @@ struct VibeCloneBridge {
 
     static func currentLocator() -> TerminalLocator {
         var ttyBuf = [CChar](repeating: 0, count: 128)
-        let tty: String? = ttyname_r(0, &ttyBuf, ttyBuf.count) == 0
+        var tty: String? = ttyname_r(0, &ttyBuf, ttyBuf.count) == 0
             ? String(cString: ttyBuf) : nil
+        // CC pipes stdin → fd 0 has no tty. Walk parent processes (up to 6
+        // hops) and ask `ps -o tty=` for one that does. Cheap, no deps.
+        if tty == nil {
+            var pid = getppid()
+            for _ in 0..<6 {
+                if pid <= 1 { break }
+                if let t = ttyOfPid(pid), !t.isEmpty, t != "??" {
+                    tty = t.hasPrefix("/") ? t : "/dev/" + t
+                    break
+                }
+                pid = parentOfPid(pid)
+            }
+        }
         return TerminalLocator(
             tty: tty,
             cwd: FileManager.default.currentDirectoryPath,
             ppid: getppid()
         )
+    }
+
+    static func ttyOfPid(_ pid: pid_t) -> String? {
+        let p = Process()
+        p.launchPath = "/bin/ps"
+        p.arguments = ["-o", "tty=", "-p", "\(pid)"]
+        let out = Pipe(); p.standardOutput = out; p.standardError = Pipe()
+        do {
+            try p.run(); p.waitUntilExit()
+            let data = out.fileHandleForReading.readDataToEndOfFile()
+            return String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        } catch { return nil }
+    }
+
+    static func parentOfPid(_ pid: pid_t) -> pid_t {
+        let p = Process()
+        p.launchPath = "/bin/ps"
+        p.arguments = ["-o", "ppid=", "-p", "\(pid)"]
+        let out = Pipe(); p.standardOutput = out; p.standardError = Pipe()
+        do {
+            try p.run(); p.waitUntilExit()
+            let data = out.fileHandleForReading.readDataToEndOfFile()
+            let s = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return pid_t(s) ?? 0
+        } catch { return 0 }
     }
 
     static func writeAll(fd: Int32, bytes: [UInt8]) throws {
