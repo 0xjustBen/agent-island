@@ -26,12 +26,16 @@ final class FloatingPanel: NSPanel {
     /// Replace the panel content with a SwiftUI view.
     func setContent<V: View>(_ view: V) {
         let host = NSHostingView(rootView: view)
-        host.translatesAutoresizingMaskIntoConstraints = false
+        // Leave autoresizing on (default true) so contentView fills the panel.
         self.contentView = host
-        // Size panel to the SwiftUI view's intrinsic size.
+        // Force a layout pass so fittingSize reflects intrinsic content,
+        // then size the panel to it. Fall back to a sane default if zero.
+        host.layoutSubtreeIfNeeded()
         let fitting = host.fittingSize
-        if fitting.width > 0 && fitting.height > 0 {
-            self.setContentSize(fitting)
-        }
+        let target = NSSize(
+            width:  fitting.width  > 1 ? fitting.width  : 220,
+            height: fitting.height > 1 ? fitting.height : 44
+        )
+        self.setContentSize(target)
     }
 }
