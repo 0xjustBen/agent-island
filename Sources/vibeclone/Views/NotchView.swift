@@ -9,11 +9,19 @@ enum NotchStyle: Equatable {
 struct NotchView: View {
     @Bindable var controller: MenuBarController
     let style: NotchStyle
+    @State private var manualExpand: Bool = false
 
     /// Notch geometry — drives "drops out of notch" shape. nil for .bar.
     private var notchInfo: NotchInfo? {
         if case .notch(let info) = style, info.hasNotch { return info }
         return nil
+    }
+
+    /// Expand automatically on pending/notice, OR when user clicks pill.
+    private var isExpanded: Bool {
+        manualExpand
+            || (!controller.sessionCards.isEmpty
+                && (controller.pendingCount > 0 || controller.notices.count > 0))
     }
 
     var body: some View {
@@ -22,15 +30,14 @@ struct NotchView: View {
             HStack {
                 Spacer(minLength: 0)
                 Group {
-                    if !controller.sessionCards.isEmpty &&
-                       (controller.pendingCount > 0 || controller.notices.count > 0) {
+                    if isExpanded {
                         expandedSessionList
                     } else {
                         collapsed
                     }
                 }
                 .animation(.spring(response: 0.35, dampingFraction: 0.78),
-                           value: controller.pendingCount)
+                           value: isExpanded)
                 .fixedSize()
                 Spacer(minLength: 0)
             }
@@ -41,19 +48,24 @@ struct NotchView: View {
     // MARK: - Collapsed (matches notch width, drops directly out of it)
 
     private var collapsed: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(controller.sessionCards.count > 0 ? Color.green : Color.gray.opacity(0.6))
-                .frame(width: 6, height: 6)
-            if controller.sessionCards.count > 0 {
-                Text("\(controller.sessionCards.count)")
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+        Button {
+            manualExpand = true
+        } label: {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(controller.sessionCards.count > 0 ? Color.green : Color.gray.opacity(0.6))
+                    .frame(width: 6, height: 6)
+                if controller.sessionCards.count > 0 {
+                    Text("\(controller.sessionCards.count)")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
             }
+            .padding(.horizontal, 16)
+            .frame(width: collapsedWidth, height: 14)
+            .background(notchPill(radius: 10))
         }
-        .padding(.horizontal, 16)
-        .frame(width: collapsedWidth, height: 14)
-        .background(notchPill(radius: 10))
+        .buttonStyle(.plain)
     }
 
     /// Width matches notch underside so visually it IS the notch dropping down.
@@ -66,6 +78,22 @@ struct NotchView: View {
 
     private var expandedSessionList: some View {
         VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(controller.sessionCards.isEmpty ? "No active sessions" :
+                     "\(controller.sessionCards.count) session\(controller.sessionCards.count == 1 ? "" : "s")")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+                Spacer()
+                Button {
+                    manualExpand = false
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .help("Collapse")
+            }
             SessionListView(controller: controller)
         }
         .padding(12)

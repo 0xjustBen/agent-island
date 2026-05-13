@@ -6,39 +6,41 @@ struct SessionCardView: View {
     let onJump: () -> Void
 
     var body: some View {
-        Button(action: onJump) {
-            HStack(alignment: .top, spacing: 10) {
-                avatar
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(card.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
+        HStack(alignment: .top, spacing: 10) {
+            avatar
+            VStack(alignment: .leading, spacing: 2) {
+                Text(card.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                if let prompt = card.lastPrompt, !prompt.isEmpty {
+                    Text("You: \(prompt)")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.55))
                         .lineLimit(1)
-                    if let prompt = card.lastPrompt, !prompt.isEmpty {
-                        Text("You: \(prompt)")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.white.opacity(0.55))
-                            .lineLimit(1)
-                    }
-                    activityLine
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 4) {
-                    HStack(spacing: 4) {
-                        Chip(text: brand.displayName, color: .white.opacity(0.12))
-                        Chip(text: terminalName, color: .white.opacity(0.12))
-                    }
-                    Text(TimeAgo.format(card.lastActiveAt))
+                activityLine
+                HStack(spacing: 4) {
+                    Chip(text: brand.displayName, color: .white.opacity(0.12))
+                    Chip(text: terminalName, color: .white.opacity(0.12))
+                    Text("· last activity \(TimeAgo.format(card.lastActiveAt))")
                         .font(.system(size: 11))
-                        .foregroundStyle(.white.opacity(0.40))
+                        .foregroundStyle(.white.opacity(0.45))
                 }
+                .padding(.top, 2)
             }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.04)))
-            .contentShape(Rectangle())
+            Spacer()
+            Button(action: onJump) {
+                Label("Jump", systemImage: "arrow.up.forward.app.fill")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color(hex: brand.accentHex).opacity(0.85))
+            .controlSize(.small)
         }
-        .buttonStyle(.plain)
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.06)))
     }
 
     private var brand: AgentBrand { AgentBranding.brand(for: card.source) }
