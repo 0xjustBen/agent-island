@@ -132,13 +132,18 @@ final class MenuBarController {
                 await self.aggregator.ageActivities()
                 await self.aggregator.pruneStale(staleAfter: 600)
                 let cards = await self.aggregator.snapshot()
-                // Auto-approve any pending request whose tool matches prefs.
+                // Auto-approve any pending request whose tool matches prefs,
+                // or when Claude Code itself is in auto-accept mode.
                 let snap = await MainActor.run { self.prefs }
+                let ccAutoMode = Self.claudeAutoMode()
                 for req in list {
                     // Never auto-approve a Bash command that matches the
                     // dangerous-pattern heuristic — always force human review.
                     if DangerousCommand.isDangerous(payload: req.payload) { continue }
-                    if snap.shouldAutoApprove(toolName: Self.toolName(req)) {
+                    let allow = snap.shouldAutoApprove(toolName: Self.toolName(req))
+                              || ccAutoMode
+                              || Self.payloadSignalsAutoMode(req.payload)
+                    if allow {
                         await self.queue.resolve(
                             id: req.id,
                             with: ApprovalResponse(decision: .approve, reason: "auto-approved")
@@ -194,6 +199,52 @@ final class MenuBarController {
     static func toolName(_ r: PermissionRequest) -> String {
         if case .string(let s) = r.payload["tool_name"] ?? .null { return s }
         return ""
+    }
+
+    /// True when Claude Code's own settings.json signals "skip permission
+    /// prompts" — usually via `skipAutoPermissionPrompt: true` (the flag
+    /// you get from `claude --dangerously-skip-permissions`). Respect it
+    /// so the user's existing CC auto-mode keeps working.
+    private static var ccSettingsURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".claude/settings.json")
+    }
+    private static var ccAutoModeCache: (mtime: Date, value: Bool) = (.distantPast, false)
+    static func claudeAutoMode() -> Bool {
+        let attrs = try? FileManager.default.attributesOfItem(atPath: ccSettingsURL.path)
+        let mtime = (attrs?[.modificationDate] as? Date) ?? .distantPast
+        if mtime == ccAutoModeCache.mtime { return ccAutoModeCache.value }
+        guard
+            let data = try? Data(contentsOf: ccSettingsURL),
+            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else {
+            ccAutoModeCache = (mtime, false); return false
+        }
+        let skip = (obj["skipAutoPermissionPrompt"] as? Bool) ?? false
+        let mode = (obj["permission_mode"] as? String) ?? ""
+        let value = skip
+            || mode == "auto"
+            || mode == "auto_accept"
+            || mode == "yolo"
+            || mode == "dangerously_skip"
+        ccAutoModeCache = (mtime, value)
+        return value
+    }
+
+    /// Some Claude Code builds embed the auto-mode flag in the hook payload
+    /// itself, so check those fields as a per-request signal.
+    static func payloadSignalsAutoMode(_ payload: [String: JSONValue]) -> Bool {
+        for key in ["permission_mode", "permissionMode", "autoAccept", "skipPermissions"] {
+            switch payload[key] ?? .null {
+            case .bool(let b) where b: return true
+            case .string(let s):
+                let v = s.lowercased()
+                if v == "auto" || v == "auto_accept" || v == "yolo"
+                    || v == "dangerously_skip" || v == "skip" { return true }
+            default: break
+            }
+        }
+        return false
     }
 
     func approve(_ request: PermissionRequest) {
