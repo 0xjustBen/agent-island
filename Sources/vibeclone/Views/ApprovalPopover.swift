@@ -8,6 +8,10 @@ struct ApprovalPopover: View {
         VStack(alignment: .leading, spacing: 8) {
             header
             Divider()
+            if !controller.notices.isEmpty {
+                noticesList
+                Divider()
+            }
             requestList
             Divider()
             EventTicker(activeSessions: controller.activeSessionsCount,
@@ -16,6 +20,33 @@ struct ApprovalPopover: View {
         }
         .padding(12)
         .frame(width: 460)
+    }
+
+    @ViewBuilder private var noticesList: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Notifications").font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            ForEach(controller.notices, id: \.id) { n in
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "bell.fill").foregroundStyle(.yellow)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(n.source).font(.caption.weight(.semibold))
+                        Text(n.message).font(.callout).lineLimit(3)
+                    }
+                    Spacer()
+                    Button("Jump") { controller.jumpNotice(n) }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    Button {
+                        controller.dismissNotice(n)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.secondary)
+                }
+                .padding(8)
+                .background(RoundedRectangle(cornerRadius: 6).fill(.yellow.opacity(0.10)))
+            }
+        }
     }
 
     private var header: some View {

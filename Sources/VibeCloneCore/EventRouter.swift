@@ -11,6 +11,7 @@ public actor EventRouter {
     private let sessions: ActiveSessions
     private let history: any HistoryRecording
     private let adapter: any AgentAdapter
+    private let notices: NoticeStore?
 
     public var onEventArrived: (@Sendable (EventName) -> Void)?
 
@@ -21,11 +22,13 @@ public actor EventRouter {
     public init(queue: ApprovalQueue,
                 sessions: ActiveSessions,
                 history: any HistoryRecording,
-                adapter: any AgentAdapter) {
+                adapter: any AgentAdapter,
+                notices: NoticeStore? = nil) {
         self.queue = queue
         self.sessions = sessions
         self.history = history
         self.adapter = adapter
+        self.notices = notices
     }
 
     /// Route a request for the given event. Always returns a stdout body for the bridge.
@@ -57,7 +60,16 @@ public actor EventRouter {
         case .subagentStop:
             await sessions.subagentDelta(sessionId: sessionId(from: request), delta: -1)
 
-        case .preToolUse, .postToolUse, .notification, .userPromptSubmit, .preCompact:
+        case .notification:
+            if let store = notices {
+                let msg = extractMessage(from: request) ?? "Agent is waiting"
+                await store.add(Notice(
+                    id: request.id, source: request.source, message: msg,
+                    locator: request.locator, receivedAt: Date()
+                ))
+            }
+
+        case .preToolUse, .postToolUse, .userPromptSubmit, .preCompact:
             break   // record-only
         }
 
@@ -74,5 +86,11 @@ public actor EventRouter {
     private func sessionId(from request: PermissionRequest) -> String {
         if case .string(let s) = request.payload["session_id"] ?? .null { return s }
         return request.id
+    }
+
+    private func extractMessage(from request: PermissionRequest) -> String? {
+        if case .string(let m) = request.payload["message"] ?? .null { return m }
+        if case .string(let m) = request.payload["text"] ?? .null { return m }
+        return nil
     }
 }

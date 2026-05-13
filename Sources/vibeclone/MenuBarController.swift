@@ -11,6 +11,7 @@ final class MenuBarController {
     private(set) var pending: [PermissionRequest] = []
     private(set) var activeSessionsCount: Int = 0
     private(set) var lastEventAt: Date?
+    private(set) var notices: [Notice] = []
     var prefs: AppPreferences {
         didSet { prefs.save(paths: paths) }
     }
@@ -19,6 +20,7 @@ final class MenuBarController {
     let queue: ApprovalQueue
     let sessions: ActiveSessions
     let history: HistoryWriter
+    let noticeStore: NoticeStore
     let router: EventRouter
     let server: SocketServer
     let installer: HookInstaller
@@ -41,9 +43,11 @@ final class MenuBarController {
         )
         self.sessions = ActiveSessions()
         self.history = HistoryWriter(url: p.historyJSONL)
+        self.noticeStore = NoticeStore()
         let adapter = ClaudeCodeAdapter()
         self.router = EventRouter(queue: queue, sessions: sessions,
-                                  history: history, adapter: adapter)
+                                  history: history, adapter: adapter,
+                                  notices: noticeStore)
         self.server = SocketServer(router: router, paths: p)
         self.installer = HookInstaller(adapters: [adapter], paths: p)
         boot()
@@ -102,10 +106,12 @@ final class MenuBarController {
                 let count = await self.queue.pendingCount
                 let list  = await self.queue.pendingList
                 let active = await self.sessions.activeCount
+                let nots = await self.noticeStore.snapshot()
                 await MainActor.run {
                     self.pendingCount = count
                     self.pending = list
                     self.activeSessionsCount = active
+                    self.notices = nots
                     if count != self.lastPendingCount {
                         self.lastPendingCount = count
                         self.panelController?.refresh()
@@ -132,6 +138,14 @@ final class MenuBarController {
 
     func approve(_ request: PermissionRequest) {
         Task { await queue.resolve(id: request.id, with: ApprovalResponse(decision: .approve)) }
+    }
+
+    func dismissNotice(_ notice: Notice) {
+        Task { await noticeStore.dismiss(id: notice.id) }
+    }
+
+    func jumpNotice(_ notice: Notice) {
+        Task { try? await jumper.jump(to: notice.locator) }
     }
 
     func deny(_ request: PermissionRequest, reason: String? = nil) {
