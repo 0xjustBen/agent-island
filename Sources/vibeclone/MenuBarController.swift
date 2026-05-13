@@ -254,15 +254,21 @@ final class MenuBarController {
     }
 
     func pickAskOption(card: SessionCard, option: AskOption) {
+        NSLog("vibeclone: pickAskOption number=\(option.number) tty=\(card.lastLocator.tty ?? "nil")")
         if let n = card.pendingNotice { Task { await noticeStore.dismiss(id: n.id) } }
         let sid = card.id
         let loc = card.lastLocator
         let number = option.number
         Task {
             await aggregator.clearPendingNotice(sessionId: sid)
-            try? await jumper.jump(to: loc)
+            do { try await jumper.jump(to: loc) }
+            catch { NSLog("vibeclone: pickAskOption jump failed: \(error)") }
             try? await Task.sleep(for: .milliseconds(350))
-            await MainActor.run { KeystrokeInjector.typeDigitsAndReturn(number) }
+            await MainActor.run {
+                let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
+                NSLog("vibeclone: typing \(number) front=\(front) tty=\(loc.tty ?? "nil")")
+                KeystrokeInjector.typeDigitsAndReturn(number, tty: loc.tty)
+            }
         }
     }
 

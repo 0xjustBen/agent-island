@@ -38,14 +38,34 @@ if [ ! -f "$ROOT/Resources/Sounds/permission.aiff" ]; then
     bash "$ROOT/scripts/gen-sounds.sh"
 fi
 cp -R "$ROOT/Resources/Sounds" "$APP/Contents/Resources/Sounds"
+cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+
+# Localizations
+for lproj in "$ROOT/Resources/Localizations"/*.lproj; do
+    [ -d "$lproj" ] || continue
+    cp -R "$lproj" "$APP/Contents/Resources/$(basename "$lproj")"
+done
 
 chmod +x "$APP/Contents/MacOS/vibeclone" "$APP/Contents/Helpers/vibeclone-bridge"
 
-# Sign nested executable FIRST, then bundle. --deep is deprecated; sign explicitly.
-echo "==> codesign (ad-hoc, dev only)"
-codesign --force --sign - --timestamp=none "$APP/Contents/Helpers/vibeclone-bridge"
-codesign --force --sign - --timestamp=none "$APP/Contents/MacOS/vibeclone"
-codesign --force --sign - --timestamp=none "$APP"
+# Use a stable self-signed identity (from scripts/setup-signing-identity.sh)
+# when present — that keeps the bundle hash steady across rebuilds so macOS
+# permission grants (Accessibility, Automation) survive. Falls back to
+# ad-hoc "-" otherwise — at the cost of re-granting AX every build.
+IDENTITY="VibeClone Self-Signed"
+# `find-identity -p codesigning` filters by trust which self-signed certs
+# usually lack. Match by name on the untrusted list — codesign itself
+# happily signs with it, that's what matters here.
+if security find-identity 2>/dev/null | grep -q "$IDENTITY"; then
+    SIGN_ARG="$IDENTITY"
+    echo "==> codesign (stable identity: $IDENTITY)"
+else
+    SIGN_ARG="-"
+    echo "==> codesign (ad-hoc — run scripts/setup-signing-identity.sh for persistent AX permission)"
+fi
+codesign --force --sign "$SIGN_ARG" --timestamp=none "$APP/Contents/Helpers/vibeclone-bridge"
+codesign --force --sign "$SIGN_ARG" --timestamp=none "$APP/Contents/MacOS/vibeclone"
+codesign --force --sign "$SIGN_ARG" --timestamp=none "$APP"
 
 # Verify.
 codesign --verify --deep --strict "$APP" && echo "==> codesign verify OK"
