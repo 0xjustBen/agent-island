@@ -66,24 +66,36 @@ weren't watching.
 
 ## 🎬 Demo
 
-> Screenshots coming soon. Quick mental model:
+<picture>
+  <img alt="Notch demo — permission card drops out of the macOS camera notch with an Approve / Deny choice and a destructive-command warning." src="assets/notch-demo.svg" width="100%">
+</picture>
 
-```text
- ┌──────────────────[ ⬤ Notch ]──────────────────┐    ← macOS menu bar
- │                                                │
- │   🐝  vibe-clone · Working…           1   2    │    ← agent + counts
- ╰────────────────╮          ╭────────────────────╯
-                  │ ▼ click  │
-                  ▼          ▼
-  ┌────────────────────────────────────────────────┐
-  │  Permission needed                              │
-  │  ┌──────────────────────────────────────────┐   │
-  │  │  Bash    git reset --hard HEAD~5         │   │
-  │  │  ⚠︎ Looks destructive — review carefully │   │
-  │  │  [ ⌘N Deny ]            [ ⌘Y Approve ]   │   │
-  │  └──────────────────────────────────────────┘   │
-  └────────────────────────────────────────────────┘
-```
+<details>
+<summary><b>📋 AskUserQuestion picker — agents ask, you click</b></summary>
+
+<br/>
+
+<picture>
+  <img alt="Ask demo — agent multi-choice options rendered as clickable cards under the notch." src="assets/ask-demo.svg" width="100%">
+</picture>
+
+When an agent calls `AskUserQuestion` (or any other multi-choice tool),
+Agent Island parses the options out of the tool input and shows them as
+buttons. Click one — the digit + Return is typed into the correct
+terminal automatically, so the agent keeps moving.
+
+</details>
+
+<details>
+<summary><b>🔁 How a tool call flows through Agent Island (animated)</b></summary>
+
+<br/>
+
+<picture>
+  <img alt="Animated flow — Claude Code → bridge → app → user → permission decision back to Claude." src="assets/flow-animated.svg" width="100%">
+</picture>
+
+</details>
 
 ---
 

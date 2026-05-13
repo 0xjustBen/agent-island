@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" width="880" height="460" font-family="-apple-system, BlinkMacSystemFont, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1d2e"/>
+      <stop offset="100%" stop-color="#0c0e18"/>
+    </linearGradient>
+    <linearGradient id="hex2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffd96b"/>
+      <stop offset="100%" stop-color="#c98c1e"/>
+    </linearGradient>
+  </defs>
+  <rect width="880" height="460" fill="url(#bg2)" rx="10"/>
+  <rect x="0" y="0" width="880" height="34" fill="#000" opacity="0.85"/>
+  <text x="780" y="22" fill="#fff" font-size="13" opacity="0.7">19:08  ⌘</text>
+  <path d="M 380 0 L 380 22 Q 380 32 390 32 L 490 32 Q 500 32 500 22 L 500 0 Z" fill="#000"/>
+
+  <!-- expanded ask card -->
+  <g transform="translate(245,46)">
+    <rect x="0" y="0" width="390" height="378" rx="20" fill="#0a0a0a" stroke="#222" stroke-width="0.5"/>
+
+    <!-- header -->
+    <circle cx="34" cy="34" r="6" fill="#5ac8fa"/>
+    <text x="50" y="38" fill="#5ac8fa" font-size="13" font-weight="600">Claude asks</text>
+    <text x="370" y="38" fill="#fff" opacity="0.4" font-size="14" text-anchor="end">✕</text>
+
+    <!-- question -->
+    <text x="20" y="68" fill="#fff" font-size="14" font-weight="600">Who is this approval request for?</text>
+
+    <!-- option 1 (selected/hover) -->
+    <rect x="14" y="84" width="362" height="68" rx="10" fill="#1a1a1a">
+      <animate attributeName="fill" values="#1a1a1a;#22324a;#1a1a1a" dur="3s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="22" y="98" width="34" height="22" rx="6" fill="rgba(90,200,250,0.25)"/>
+    <text x="32" y="113" fill="#5ac8fa" font-size="11" font-weight="700">⌘1</text>
+    <text x="68" y="106" fill="#fff" font-size="13" font-weight="500">Security team / manager</text>
+    <text x="68" y="124" fill="#fff" opacity="0.55" font-size="11">Internal approval to run the exploit in your env</text>
+
+    <!-- option 2 -->
+    <rect x="14" y="160" width="362" height="68" rx="10" fill="#161616"/>
+    <rect x="22" y="174" width="34" height="22" rx="6" fill="rgba(90,200,250,0.25)"/>
+    <text x="32" y="189" fill="#5ac8fa" font-size="11" font-weight="700">⌘2</text>
+    <text x="68" y="182" fill="#fff" font-size="13" font-weight="500">Client (pentest engagement)</text>
+    <text x="68" y="200" fill="#fff" opacity="0.55" font-size="11">Formal authorization for the engagement</text>
+
+    <!-- option 3 -->
+    <rect x="14" y="236" width="362" height="68" rx="10" fill="#161616"/>
+    <rect x="22" y="250" width="34" height="22" rx="6" fill="rgba(90,200,250,0.25)"/>
+    <text x="32" y="265" fill="#5ac8fa" font-size="11" font-weight="700">⌘3</text>
+    <text x="68" y="258" fill="#fff" font-size="13" font-weight="500">GitHub PR reviewer</text>
+    <text x="68" y="276" fill="#fff" opacity="0.55" font-size="11">Code review approval for merging the change</text>
+
+    <!-- option 4 -->
+    <rect x="14" y="312" width="362" height="46" rx="10" fill="#161616"/>
+    <rect x="22" y="326" width="34" height="22" rx="6" fill="rgba(90,200,250,0.25)"/>
+    <text x="32" y="341" fill="#5ac8fa" font-size="11" font-weight="700">⌘4</text>
+    <text x="68" y="340" fill="#fff" font-size="13" font-weight="500">Type something else…</text>
+  </g>
+
+  <text x="440" y="445" fill="#fff" opacity="0.5" font-size="11" text-anchor="middle">AskUserQuestion options become clickable cards — your pick lands in the terminal as a keystroke.</text>
+</svg>
