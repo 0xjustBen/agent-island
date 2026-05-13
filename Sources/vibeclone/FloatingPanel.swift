@@ -24,17 +24,17 @@ final class FloatingPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 
     /// Replace the panel content with a SwiftUI view.
+    /// Panel WIDTH stays fixed (caller sets it via initial contentRect).
+    /// Only HEIGHT adapts to the content's fitting size — keeps the panel
+    /// rectangle wide enough that SwiftUI centers its inner pill/card.
     func setContent<V: View>(_ view: V) {
         let host = NSHostingView(rootView: view)
-        // Leave autoresizing on (default true) so contentView fills the panel.
         self.contentView = host
-        // Force a layout pass so fittingSize reflects intrinsic content,
-        // then size the panel to it. Fall back to a sane default if zero.
         host.layoutSubtreeIfNeeded()
         let fitting = host.fittingSize
         let target = NSSize(
-            width:  fitting.width  > 1 ? fitting.width  : 220,
-            height: fitting.height > 1 ? fitting.height : 44
+            width:  self.frame.width,                       // preserve width
+            height: fitting.height > 1 ? fitting.height : 60
         )
         self.setContentSize(target)
     }

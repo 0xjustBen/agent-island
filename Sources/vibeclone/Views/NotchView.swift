@@ -11,18 +11,24 @@ struct NotchView: View {
     let style: NotchStyle
 
     var body: some View {
-        Group {
-            if let req = controller.pending.first {
-                expanded(req: req, more: max(controller.pendingCount - 1, 0))
-            } else {
-                collapsed
+        VStack(spacing: 0) {
+            Spacer().frame(height: topPadding)        // clear notch / menu-bar
+            HStack {
+                Spacer(minLength: 0)
+                Group {
+                    if let req = controller.pending.first {
+                        expanded(req: req, more: max(controller.pendingCount - 1, 0))
+                    } else {
+                        collapsed
+                    }
+                }
+                .animation(.spring(response: 0.35, dampingFraction: 0.7),
+                           value: controller.pendingCount)
+                .fixedSize()
+                Spacer(minLength: 0)
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.7),
-                   value: controller.pendingCount)
-        .fixedSize(horizontal: false, vertical: true)
-        .frame(maxWidth: 400)
-        .padding(.top, topPadding)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Collapsed
