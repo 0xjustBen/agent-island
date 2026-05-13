@@ -33,6 +33,7 @@ final class MenuBarController {
     private(set) var panelController: PanelController!
     private(set) var soundPlayer: SoundPlayer!
     private(set) var hotkeyMonitor: HotkeyMonitor?
+    private(set) var jsonlPoller: JSONLPollerTimer?
     private var lastPendingCount: Int = -1
 
     init() {
@@ -96,6 +97,10 @@ final class MenuBarController {
         }
 
         panelController.updateForMode(prefs.displayMode)
+
+        let poller = JSONLPollerTimer(quota: quotaTracker)
+        poller.start(interval: 60)
+        self.jsonlPoller = poller
 
         if prefs.hotkeyEnabled {
             let mon = HotkeyMonitor { [weak self] in
@@ -207,6 +212,7 @@ final class MenuBarController {
         // Mark clean exit + stop everything.
         refreshTask?.cancel()
         hotkeyMonitor?.stop()
+        jsonlPoller?.stop()
         installer.stop()
         server.stop()
         let lastrun: [String: Any] = [
