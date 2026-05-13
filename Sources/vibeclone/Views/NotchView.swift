@@ -120,8 +120,8 @@ struct NotchView: View {
 
     private var topPadding: CGFloat {
         switch style {
-        case .notch(let info): return max(info.notchHeight, 8) + 4
-        case .bar: return 4
+        case .notch(let info): return info.notchHeight    // flush with notch bottom
+        case .bar: return 28                              // below menu bar
         }
     }
 }

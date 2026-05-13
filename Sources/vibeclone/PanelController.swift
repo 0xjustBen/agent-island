@@ -52,16 +52,11 @@ final class PanelController {
         let screenFrame = screen.frame
         let panelFrame = p.frame
         let centerX = screenFrame.midX - panelFrame.width / 2
-        let topY: CGFloat = {
-            switch style {
-            case .notch(let info):
-                // Position just below the notch.
-                return screenFrame.maxY - info.notchHeight - panelFrame.height - 8
-            case .bar:
-                // ~28pt menu bar; leave 8pt gap.
-                return screenFrame.maxY - 28 - panelFrame.height - 8
-            }
-        }()
-        p.setFrameOrigin(NSPoint(x: centerX, y: topY))
+        // Anchor panel TOP to screen TOP so the panel rectangle covers the
+        // notch zone. NotchView pads its content down by notchHeight (or
+        // menuBarHeight for .bar) so visible UI sits just below the notch.
+        let originY = screenFrame.maxY - panelFrame.height
+        p.setFrameOrigin(NSPoint(x: centerX, y: originY))
+        _ = style   // style consumed by NotchView padding
     }
 }
