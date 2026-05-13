@@ -65,6 +65,70 @@ private func mkRequest(_ sid: String, source: String = "claude",
     } else { Issue.record("expected justFinished") }
 }
 
+@Test func askUserQuestion_synthesizes_notice_with_options() async {
+    let agg = SessionAggregator(probe: { _ in .iTerm2 })
+    await agg.accept(event: .sessionStart, request: mkRequest("s1"))
+    let payload: [String: JSONValue] = [
+        "session_id": .string("s1"),
+        "tool_name": .string("AskUserQuestion"),
+        "tool_input": .object([
+            "questions": .array([
+                .object([
+                    "question": .string("Pick an env"),
+                    "options": .array([
+                        .object([
+                            "label": .string("Prod"),
+                            "description": .string("Live customers")
+                        ]),
+                        .object([
+                            "label": .string("Stage"),
+                            "description": .string("QA + integration")
+                        ])
+                    ])
+                ])
+            ])
+        ])
+    ]
+    await agg.accept(event: .preToolUse, request: mkRequest("s1", payload: payload))
+    let snap = await agg.snapshot()
+    let notice = snap[0].pendingNotice
+    #expect(notice != nil)
+    let msg = notice?.message ?? ""
+    #expect(msg.contains("Pick an env"))
+    #expect(msg.contains("1. Prod"))
+    #expect(msg.contains("Live customers"))
+    #expect(msg.contains("2. Stage"))
+    // Regular permission card should NOT also show for ask flows.
+    #expect(snap[0].pendingPermission == nil)
+}
+
+@Test func askUserQuestion_notice_cleared_on_postToolUse() async {
+    let agg = SessionAggregator(probe: { _ in .iTerm2 })
+    await agg.accept(event: .sessionStart, request: mkRequest("s1"))
+    let askPayload: [String: JSONValue] = [
+        "session_id": .string("s1"),
+        "tool_name": .string("AskUserQuestion"),
+        "tool_input": .object([
+            "questions": .array([
+                .object([
+                    "question": .string("Q"),
+                    "options": .array([
+                        .object(["label": .string("A")]),
+                        .object(["label": .string("B")])
+                    ])
+                ])
+            ])
+        ])
+    ]
+    await agg.accept(event: .preToolUse, request: mkRequest("s1", payload: askPayload))
+    await agg.accept(event: .postToolUse, request: mkRequest("s1", payload: [
+        "session_id": .string("s1"),
+        "tool_name": .string("AskUserQuestion")
+    ]))
+    let snap = await agg.snapshot()
+    #expect(snap[0].pendingNotice == nil)
+}
+
 @Test func sessionEnd_removes_card() async {
     let agg = SessionAggregator(probe: { _ in .iTerm2 })
     await agg.accept(event: .sessionStart, request: mkRequest("s1"))

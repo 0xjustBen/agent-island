@@ -78,6 +78,15 @@ private func mkReq(_ id: String, sid: String = "sess1", source: String = "claude
     #expect(d2 == 1)
 }
 
+@Test func routes_stop_keeps_session_alive() async throws {
+    let q = ApprovalQueue(); let s = ActiveSessions(); let h = FakeHistory()
+    let r = EventRouter(queue: q, sessions: s, history: h, adapter: FakeAdapter())
+    _ = await r.route(event: .sessionStart, request: mkReq("r1", sid: "k"))
+    _ = await r.route(event: .stop, request: mkReq("r2", sid: "k"))
+    let n = await s.activeCount
+    #expect(n == 1, "Stop = turn finished, session still active")
+}
+
 @Test func routes_sessionEnd_removes_session() async throws {
     let q = ApprovalQueue(); let s = ActiveSessions(); let h = FakeHistory()
     let r = EventRouter(queue: q, sessions: s, history: h, adapter: FakeAdapter())
