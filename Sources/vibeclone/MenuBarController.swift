@@ -113,6 +113,16 @@ final class MenuBarController {
                 let nots = await self.noticeStore.snapshot()
                 await self.aggregator.ageActivities()
                 let cards = await self.aggregator.snapshot()
+                // Auto-approve any pending request whose tool matches prefs.
+                let snap = await MainActor.run { self.prefs }
+                for req in list {
+                    if snap.shouldAutoApprove(toolName: Self.toolName(req)) {
+                        await self.queue.resolve(
+                            id: req.id,
+                            with: ApprovalResponse(decision: .approve, reason: "auto-approved")
+                        )
+                    }
+                }
                 await MainActor.run {
                     self.pendingCount = count
                     self.pending = list
@@ -141,6 +151,11 @@ final class MenuBarController {
         default:
             break
         }
+    }
+
+    static func toolName(_ r: PermissionRequest) -> String {
+        if case .string(let s) = r.payload["tool_name"] ?? .null { return s }
+        return ""
     }
 
     func approve(_ request: PermissionRequest) {

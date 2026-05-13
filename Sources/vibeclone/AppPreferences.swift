@@ -15,6 +15,13 @@ public struct AppPreferences: Codable, Sendable {
     public var soundPack: String
     public var hotkeyEnabled: Bool
 
+    // Phase 4.5 — auto-approve
+    /// Global auto-approve for any permission request. Off by default.
+    public var autoApproveAll: Bool
+    /// Allowed tool names for auto-approve when `autoApproveAll` is false.
+    /// Example: ["Read", "Glob", "Grep"] = safe read-only tools.
+    public var autoApproveTools: [String]
+
     public init(autoHealHooks: Bool = true,
                 soundsEnabled: Bool = true,
                 requestTimeoutSeconds: Int = 86_400,
@@ -23,7 +30,9 @@ public struct AppPreferences: Codable, Sendable {
                 displayMode: DisplayMode = .notch,
                 notchExpandStyle: NotchExpandStyle = .auto,
                 soundPack: String = "default",
-                hotkeyEnabled: Bool = true) {
+                hotkeyEnabled: Bool = true,
+                autoApproveAll: Bool = false,
+                autoApproveTools: [String] = []) {
         self.autoHealHooks = autoHealHooks
         self.soundsEnabled = soundsEnabled
         self.requestTimeoutSeconds = requestTimeoutSeconds
@@ -33,6 +42,13 @@ public struct AppPreferences: Codable, Sendable {
         self.notchExpandStyle = notchExpandStyle
         self.soundPack = soundPack
         self.hotkeyEnabled = hotkeyEnabled
+        self.autoApproveAll = autoApproveAll
+        self.autoApproveTools = autoApproveTools
+    }
+
+    /// True if a request with given tool name should be auto-approved.
+    public func shouldAutoApprove(toolName: String) -> Bool {
+        autoApproveAll || autoApproveTools.contains(toolName)
     }
 
     public static func load(paths: Paths) -> AppPreferences {

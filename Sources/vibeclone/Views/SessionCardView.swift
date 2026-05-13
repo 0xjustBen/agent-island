@@ -47,13 +47,7 @@ struct SessionCardView: View {
     private var terminalName: String { TerminalBranding.displayName(for: card.terminalKind) }
 
     private var avatar: some View {
-        ZStack {
-            Circle()
-                .fill(Color(hex: brand.accentHex).opacity(0.18))
-                .frame(width: 28, height: 28)
-            Text(brand.emoji)
-                .font(.system(size: 14))
-        }
+        AnimatedAvatar(brand: brand, activity: card.activity)
     }
 
     @ViewBuilder
