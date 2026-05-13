@@ -12,6 +12,7 @@ final class MenuBarController {
     private(set) var activeSessionsCount: Int = 0
     private(set) var lastEventAt: Date?
     private(set) var notices: [Notice] = []
+    private(set) var sessionCards: [SessionCard] = []
     var prefs: AppPreferences {
         didSet { prefs.save(paths: paths) }
     }
@@ -150,6 +151,17 @@ final class MenuBarController {
 
     func deny(_ request: PermissionRequest, reason: String? = nil) {
         Task { await queue.resolve(id: request.id, with: ApprovalResponse(decision: .deny, reason: reason)) }
+    }
+
+    func jumpToCard(_ card: SessionCard) {
+        Task { try? await jumper.jump(to: TerminalLocator(tty: nil, cwd: nil, ppid: nil)) }
+        // Real wiring in Task P4.11 — for now just a no-op placeholder that compiles.
+    }
+
+    func pickAskOption(card: SessionCard, option: AskOption) {
+        // Phase 7: inject keystrokes. For now, dismiss notice and jump.
+        if let n = card.pendingNotice { Task { await noticeStore.dismiss(id: n.id) } }
+        jumpToCard(card)
     }
 
     func jump(_ request: PermissionRequest) {
