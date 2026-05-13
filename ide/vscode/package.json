@@ -1,0 +1,37 @@
+{
+  "name": "agentisland",
+  "displayName": "AgentIsland",
+  "description": "Show AgentIsland session activity inside VS Code.",
+  "version": "0.1.0",
+  "license": "MIT",
+  "publisher": "agentisland",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "agentisland.openHistory", "title": "AgentIsland: Open History" },
+      { "command": "agentisland.toggleAutoApprove", "title": "AgentIsland: Toggle Auto-Approve" }
+    ],
+    "configuration": {
+      "title": "AgentIsland",
+      "properties": {
+        "agentisland.socketPath": {
+          "type": "string",
+          "default": "/tmp/agentisland.sock",
+          "description": "Path to agentisland UNIX socket"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

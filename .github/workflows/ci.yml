@@ -42,13 +42,13 @@ jobs:
           # Spin up app in a temp HOME, verify hooks land correctly. App auto-quits
           # after a short window because we kill the process.
           export TEST_HOME=$(mktemp -d)
-          HOME="$TEST_HOME" build/VibeClone.app/Contents/MacOS/vibeclone &
+          HOME="$TEST_HOME" build/AgentIsland.app/Contents/MacOS/agentisland &
           PID=$!
           sleep 5
           kill $PID 2>/dev/null || true
 
           # Assert launcher script exists.
-          test -x "$TEST_HOME/.vibeclone/bin/vibeclone-bridge"
+          test -x "$TEST_HOME/.agentisland/bin/agentisland-bridge"
 
           # Assert 11 hook entries present.
           python3 -c "
@@ -58,6 +58,6 @@ jobs:
           assert len(hooks) == 11, f'expected 11 events, got {len(hooks)}: {sorted(hooks)}'
           perm = hooks['PermissionRequest'][0]['hooks'][0]
           assert perm['timeout'] == 86400, f'PermissionRequest timeout != 86400: {perm}'
-          assert 'vibeclone-bridge' in perm['command']
+          assert 'agentisland-bridge' in perm['command']
           print('hook-install OK: 11 events, PermissionRequest timeout 86400')
           "

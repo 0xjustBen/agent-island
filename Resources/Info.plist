@@ -5,13 +5,15 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
     <key>CFBundleDisplayName</key>
-    <string>VibeClone</string>
+    <string>AgentIsland</string>
     <key>CFBundleExecutable</key>
-    <string>vibeclone</string>
+    <string>agentisland</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>app.vibeclone.macos</string>
+    <string>app.agentisland.macos</string>
     <key>CFBundleName</key>
-    <string>VibeClone</string>
+    <string>AgentIsland</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -23,13 +25,13 @@
     <key>LSUIElement</key>
     <true/>
     <key>NSAppleEventsUsageDescription</key>
-    <string>VibeClone needs to control terminal apps (iTerm2, Terminal) to jump to the correct window, tab, and session when you click a notification.</string>
+    <string>AgentIsland needs to control terminal apps (iTerm2, Terminal) to jump to the correct window, tab, and session when you click a notification.</string>
     <key>SUAutomaticallyUpdate</key>
     <true/>
     <key>SUEnableAutomaticChecks</key>
     <true/>
     <key>SUFeedURL</key>
-    <string></string>
+    <string>https://github.com/anthropics/agentisland/releases/latest/download/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string></string>
     <key>SUScheduledCheckInterval</key>

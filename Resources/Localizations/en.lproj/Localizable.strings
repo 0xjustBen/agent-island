@@ -1,0 +1,23 @@
+/* VibeClone English strings */
+
+"app.name" = "VibeClone";
+"ask.title" = "%@ asks";
+"permission.title" = "Permission needed";
+"button.approve" = "Approve";
+"button.deny" = "Deny";
+"button.jump" = "Jump";
+"button.history" = "History";
+"button.clear_all" = "Clear all sessions";
+"button.reset_prefs" = "Reset preferences";
+"button.quit" = "Quit VibeClone";
+"empty.no_sessions" = "No active sessions";
+"prefs.display" = "Display";
+"prefs.notch" = "Notch";
+"prefs.bar" = "Floating bar";
+"prefs.menu_only" = "Menu bar only";
+"prefs.auto_heal" = "Auto-heal";
+"prefs.sounds" = "Sounds";
+"prefs.auto_approve_all" = "Auto-approve all";
+"prefs.lock_to_screen" = "Lock to screen";
+"about.tagline" = "Free, MIT-licensed monitor for AI coding agents.";
+"about.privacy" = "Zero telemetry — your data stays on this Mac.";

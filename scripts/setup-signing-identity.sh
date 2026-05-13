@@ -7,7 +7,7 @@
 # Five clicks, one time, then forever.
 set -e
 
-IDENTITY="VibeClone Self-Signed"
+IDENTITY="AgentIsland Self-Signed"
 
 if security find-identity -v -p codesigning 2>/dev/null | grep -q "$IDENTITY"; then
     echo "Identity '$IDENTITY' already present in the login keychain. Done."
@@ -16,7 +16,7 @@ fi
 
 cat <<INSTRUCTIONS
 
-VibeClone needs a stable code-signing identity in your login keychain so
+AgentIsland needs a stable code-signing identity in your login keychain so
 macOS Accessibility/Automation permissions survive rebuilds. Apple's
 Certificate Assistant is the most reliable way to create one.
 

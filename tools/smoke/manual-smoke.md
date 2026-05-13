@@ -9,14 +9,14 @@ Parity-checked against Vibe Island v1.0.33 behavior.
 
 ## Install
 1. `bash scripts/build-app.sh release`
-2. `rm -rf /Applications/VibeClone.app && cp -R build/VibeClone.app /Applications/`
-3. Launch from Spotlight or `open /Applications/VibeClone.app`
+2. `rm -rf /Applications/AgentIsland.app && cp -R build/AgentIsland.app /Applications/`
+3. Launch from Spotlight or `open /Applications/AgentIsland.app`
 
 ## Verify install
-4. `cat ~/.vibeclone/bin/vibeclone-bridge` — zsh script exists, contains `kMDItemCFBundleIdentifier == "app.vibeclone.macos"` + `mdfind` + 5-min orphan logic
-5. `ls -la /tmp/vibeclone.sock` — mode `srw-------` (0600)
+4. `cat ~/.agentisland/bin/agentisland-bridge` — zsh script exists, contains `kMDItemCFBundleIdentifier == "app.agentisland.macos"` + `mdfind` + 5-min orphan logic
+5. `ls -la /tmp/agentisland.sock` — mode `srw-------` (0600)
 6. `python3 -c "import json; d=json.load(open('$HOME/.claude/settings.json')); print(sorted(d.get('hooks',{}).keys()))"` — prints `['Notification','PermissionRequest','PostToolUse','PreCompact','PreToolUse','SessionEnd','SessionStart','Stop','SubagentStart','SubagentStop','UserPromptSubmit']` (all 11)
-7. `python3 -c "import json; d=json.load(open('$HOME/.claude/settings.json')); print(d['hooks']['PermissionRequest'][0]['hooks'][0])"` — confirms `"timeout": 86400` and command `"/bin/sh -c '[ -x \"$HOME/.vibeclone/bin/vibeclone-bridge\" ] && \"$HOME/.vibeclone/bin/vibeclone-bridge\" --source claude; exit 0'"`
+7. `python3 -c "import json; d=json.load(open('$HOME/.claude/settings.json')); print(d['hooks']['PermissionRequest'][0]['hooks'][0])"` — confirms `"timeout": 86400` and command `"/bin/sh -c '[ -x \"$HOME/.agentisland/bin/agentisland-bridge\" ] && \"$HOME/.agentisland/bin/agentisland-bridge\" --source claude; exit 0'"`
 8. Menu bar icon (bell) visible
 
 ## Permission flow
@@ -24,26 +24,26 @@ Parity-checked against Vibe Island v1.0.33 behavior.
 10. Popover opens within 200ms — claude · Bash · `echo hi` shown
 11. Click **Jump** → iTerm2 window/tab activated
 12. Click **Approve** → claude prints "hi"
-13. `tail -1 ~/Library/Logs/VibeClone/history.jsonl` — JSON line with `"event":"PermissionRequest"`, `"decision":"approve"`
+13. `tail -1 ~/Library/Logs/AgentIsland/history.jsonl` — JSON line with `"event":"PermissionRequest"`, `"decision":"approve"`
 
 ## Lifecycle events
-14. Single `claude -p` run produces records for: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PermissionRequest`, `PostToolUse`, `Stop` (verify via `cut -d'"' -f4 ~/Library/Logs/VibeClone/history.jsonl | sort -u`)
+14. Single `claude -p` run produces records for: `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PermissionRequest`, `PostToolUse`, `Stop` (verify via `cut -d'"' -f4 ~/Library/Logs/AgentIsland/history.jsonl | sort -u`)
 
 ## Resilience
-15. Quit VibeClone via popover power button. Run `claude -p "ls"` — claude proceeds (bridge exits 0 with `{}` body).
-16. Relaunch VibeClone.
-17. Manually `rm ~/.vibeclone/bin/vibeclone-bridge` — re-created within 30 s by HookInstaller heal timer.
-18. Quit VibeClone. Move `.app` to trash. Run `claude -p "ls"`. Wait > 5 min. Run `claude -p "ls"` again. The launcher's orphan path runs, JXA strips all vibeclone hook entries from `~/.claude/settings.json` and removes `~/.vibeclone`.
+15. Quit AgentIsland via popover power button. Run `claude -p "ls"` — claude proceeds (bridge exits 0 with `{}` body).
+16. Relaunch AgentIsland.
+17. Manually `rm ~/.agentisland/bin/agentisland-bridge` — re-created within 30 s by HookInstaller heal timer.
+18. Quit AgentIsland. Move `.app` to trash. Run `claude -p "ls"`. Wait > 5 min. Run `claude -p "ls"` again. The launcher's orphan path runs, JXA strips all agentisland hook entries from `~/.claude/settings.json` and removes `~/.agentisland`.
 19. Disable **Auto-heal hooks** toggle in popover. Manually strip a hook entry. Confirm it does NOT come back within 60s.
 
 ## Zero-telemetry check
-20. While app is running: `lsof -i -P | grep VibeClone | grep -v LISTEN` — no outbound TCP connections.
-21. `nettop -p $(pgrep VibeClone) -L 5` — zero network traffic during permission flow.
+20. While app is running: `lsof -i -P | grep AgentIsland | grep -v LISTEN` — no outbound TCP connections.
+21. `nettop -p $(pgrep AgentIsland) -L 5` — zero network traffic during permission flow.
 22. `find . -name '*.swift' -exec grep -l -i 'sentry\|analytics\|posthog\|amplitude\|telemetry' {} \;` — only `AppPreferences.swift` matches (`noTelemetry: Bool = true` declaration).
 
 ## Cleanup after test
-- Quit VibeClone
-- `rm -rf /Applications/VibeClone.app ~/.vibeclone /tmp/vibeclone.sock`
+- Quit AgentIsland
+- `rm -rf /Applications/AgentIsland.app ~/.agentisland /tmp/agentisland.sock`
 - `cp /tmp/settings.before-smoke.json ~/.claude/settings.json` (restore)
 
 ---
@@ -62,20 +62,20 @@ Parity-checked against Vibe Island v1.0.33 behavior.
 
 ### Sounds
 29. With `prefs.soundsEnabled = true`, PermissionRequest fires permission sound. Toggle off → silent.
-30. Replace bundled sound: `cp ~/Music/myown.aiff ~/.vibeclone/custom-sounds/permission.aiff`. Next request plays the custom file.
+30. Replace bundled sound: `cp ~/Music/myown.aiff ~/.agentisland/custom-sounds/permission.aiff`. Next request plays the custom file.
 
 ### Markdown plan preview
 31. When CC payload carries `tool_input.plan` (string > 20 chars), RequestRow's "Plan preview" disclosure renders markdown (bold / italic / code / headers).
 32. Same plan text shows inline in NotchView expanded card with markdown styling.
 
 ### Hotkey
-33. Press ⌃⇧V from any app. First time: System Settings → Privacy → Accessibility prompt. Grant. Subsequent presses focus VibeClone + refresh panel.
+33. Press ⌃⇧V from any app. First time: System Settings → Privacy → Accessibility prompt. Grant. Subsequent presses focus AgentIsland + refresh panel.
 
 ### Display mode switching
 34. Toggle picker: panel switches notch ↔ bar ↔ hidden in < 200 ms.
 
 ### Zero-telemetry recheck (Phase 2)
-35. With panel/sounds/hotkey active: `lsof -i -P | grep VibeClone | grep -v LISTEN` → still no outbound TCP. No Sentry, no analytics.
+35. With panel/sounds/hotkey active: `lsof -i -P | grep AgentIsland | grep -v LISTEN` → still no outbound TCP. No Sentry, no analytics.
 
 ---
 
@@ -94,7 +94,7 @@ Parity-checked against Vibe Island v1.0.33 behavior.
 ### Prober verification
 
 43. `python3 -c "import os; print(os.getppid())"` from each terminal — note the ppid.
-44. Trigger `claude -p` from inside each terminal. Inspect `~/Library/Logs/VibeClone/history.jsonl` for the PermissionRequest entry — `cwd` and `tty` fields should match the source terminal.
+44. Trigger `claude -p` from inside each terminal. Inspect `~/Library/Logs/AgentIsland/history.jsonl` for the PermissionRequest entry — `cwd` and `tty` fields should match the source terminal.
 
 ### Regression check (Phase 1 + 2 still work)
 

@@ -1,0 +1,17 @@
+<idea-plugin>
+    <id>app.vibeclone.intellij</id>
+    <name>VibeClone</name>
+    <vendor email="hello@vibeclone.app" url="https://github.com/anthropics/vibeclone">VibeClone</vendor>
+
+    <description><![CDATA[
+      Show VibeClone session activity inside JetBrains IDEs. Connects to the
+      local <code>/tmp/vibeclone.sock</code> daemon for pending-count + history.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <statusBarWidgetFactory implementation="app.vibeclone.VibeCloneStatusWidget"
+                                id="vibeclone.status"/>
+    </extensions>
+</idea-plugin>

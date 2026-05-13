@@ -2,35 +2,35 @@
 import PackageDescription
 
 let package = Package(
-    name: "VibeClone",
+    name: "AgentIsland",
     platforms: [.macOS(.v14)],
     products: [
-        .library(name: "VibeCloneCore", targets: ["VibeCloneCore"]),
-        .library(name: "VibeCloneAdapters", targets: ["VibeCloneAdapters"]),
-        .library(name: "VibeCloneLauncher", targets: ["VibeCloneLauncher"]),
-        .library(name: "VibeCloneTerminals", targets: ["VibeCloneTerminals"]),
-        .executable(name: "vibeclone", targets: ["vibeclone"]),
-        .executable(name: "vibeclone-bridge", targets: ["vibeclone-bridge"]),
+        .library(name: "AgentIslandCore", targets: ["AgentIslandCore"]),
+        .library(name: "AgentIslandAdapters", targets: ["AgentIslandAdapters"]),
+        .library(name: "AgentIslandLauncher", targets: ["AgentIslandLauncher"]),
+        .library(name: "AgentIslandTerminals", targets: ["AgentIslandTerminals"]),
+        .executable(name: "agentisland", targets: ["agentisland"]),
+        .executable(name: "agentisland-bridge", targets: ["agentisland-bridge"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
     ],
     targets: [
-        .target(name: "VibeCloneCore", dependencies: [
+        .target(name: "AgentIslandCore", dependencies: [
             .product(name: "NIO", package: "swift-nio"),
             .product(name: "NIOPosix", package: "swift-nio"),
         ]),
-        .target(name: "VibeCloneAdapters", dependencies: ["VibeCloneCore"]),
-        .target(name: "VibeCloneLauncher", dependencies: ["VibeCloneCore"]),
-        .target(name: "VibeCloneTerminals", dependencies: ["VibeCloneCore"]),
-        .executableTarget(name: "vibeclone", dependencies: [
-            "VibeCloneCore", "VibeCloneAdapters", "VibeCloneLauncher", "VibeCloneTerminals",
+        .target(name: "AgentIslandAdapters", dependencies: ["AgentIslandCore"]),
+        .target(name: "AgentIslandLauncher", dependencies: ["AgentIslandCore"]),
+        .target(name: "AgentIslandTerminals", dependencies: ["AgentIslandCore"]),
+        .executableTarget(name: "agentisland", dependencies: [
+            "AgentIslandCore", "AgentIslandAdapters", "AgentIslandLauncher", "AgentIslandTerminals",
         ]),
-        .executableTarget(name: "vibeclone-bridge", dependencies: [
-            "VibeCloneCore", "VibeCloneAdapters",
+        .executableTarget(name: "agentisland-bridge", dependencies: [
+            "AgentIslandCore", "AgentIslandAdapters",
         ]),
-        .testTarget(name: "VibeCloneCoreTests", dependencies: ["VibeCloneCore"]),
-        .testTarget(name: "VibeCloneAdaptersTests", dependencies: ["VibeCloneAdapters"],
+        .testTarget(name: "AgentIslandCoreTests", dependencies: ["AgentIslandCore"]),
+        .testTarget(name: "AgentIslandAdaptersTests", dependencies: ["AgentIslandAdapters"],
                     resources: [
                         .copy("Fixtures/settings-empty.json"),
                         .copy("Fixtures/settings-with-comments.jsonc"),
@@ -40,7 +40,7 @@ let package = Package(
                         .copy("Fixtures/cc-permissionrequest.json"),
                         .copy("Fixtures/cc-sessionstart.json"),
                     ]),
-        .testTarget(name: "VibeCloneLauncherTests", dependencies: ["VibeCloneLauncher"]),
-        .testTarget(name: "VibeCloneTerminalsTests", dependencies: ["VibeCloneTerminals"]),
+        .testTarget(name: "AgentIslandLauncherTests", dependencies: ["AgentIslandLauncher"]),
+        .testTarget(name: "AgentIslandTerminalsTests", dependencies: ["AgentIslandTerminals"]),
     ]
 )
