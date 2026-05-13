@@ -23,6 +23,8 @@ final class MenuBarController {
     let history: HistoryWriter
     let noticeStore: NoticeStore
     let aggregator: SessionAggregator
+    let quotaTracker: QuotaTracker
+    private(set) var quotaSnapshot: QuotaSnapshot = .empty
     let router: EventRouter
     let server: SocketServer
     let installer: HookInstaller
@@ -47,11 +49,13 @@ final class MenuBarController {
         self.history = HistoryWriter(url: p.historyJSONL)
         self.noticeStore = NoticeStore()
         self.aggregator = SessionAggregator()
+        self.quotaTracker = QuotaTracker()
         let adapter = ClaudeCodeAdapter()
         self.router = EventRouter(queue: queue, sessions: sessions,
                                   history: history, adapter: adapter,
                                   notices: noticeStore,
-                                  aggregator: aggregator)
+                                  aggregator: aggregator,
+                                  quota: quotaTracker)
         self.server = SocketServer(router: router, paths: p)
         self.installer = HookInstaller(adapters: [adapter], paths: p)
         boot()
@@ -113,6 +117,8 @@ final class MenuBarController {
                 let nots = await self.noticeStore.snapshot()
                 await self.aggregator.ageActivities()
                 let cards = await self.aggregator.snapshot()
+                await self.quotaTracker.rolloverIfNewDay()
+                let qs = await self.quotaTracker.snapshot()
                 // Auto-approve any pending request whose tool matches prefs.
                 let snap = await MainActor.run { self.prefs }
                 for req in list {
@@ -129,6 +135,7 @@ final class MenuBarController {
                     self.activeSessionsCount = active
                     self.notices = nots
                     self.sessionCards = cards
+                    self.quotaSnapshot = qs
                     if count != self.lastPendingCount {
                         self.lastPendingCount = count
                         self.panelController?.refresh()

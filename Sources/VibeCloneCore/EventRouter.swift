@@ -13,6 +13,7 @@ public actor EventRouter {
     private let adapter: any AgentAdapter
     private let notices: NoticeStore?
     private let aggregator: SessionAggregator?
+    private let quota: QuotaTracker?
 
     public var onEventArrived: (@Sendable (EventName) -> Void)?
 
@@ -25,13 +26,15 @@ public actor EventRouter {
                 history: any HistoryRecording,
                 adapter: any AgentAdapter,
                 notices: NoticeStore? = nil,
-                aggregator: SessionAggregator? = nil) {
+                aggregator: SessionAggregator? = nil,
+                quota: QuotaTracker? = nil) {
         self.queue = queue
         self.sessions = sessions
         self.history = history
         self.adapter = adapter
         self.notices = notices
         self.aggregator = aggregator
+        self.quota = quota
     }
 
     /// Route a request for the given event. Always returns a stdout body for the bridge.
@@ -87,6 +90,9 @@ public actor EventRouter {
             decision: ApprovalResponse(decision: .approve),
             latencyMs: Int(Date().timeIntervalSince(started) * 1000)
         )
+        if let quota = quota {
+            await quota.ingest(event: event, request: request)
+        }
         if let agg = aggregator {
             var noticeForAgg: Notice? = nil
             if event == .notification, let store = notices {
