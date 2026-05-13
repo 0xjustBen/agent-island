@@ -20,9 +20,11 @@ public actor SessionAggregator {
             terminalKind: request.locator.ppid.map(probe) ?? .unknown,
             title: "(no prompt)", lastPrompt: nil,
             activity: .idle, pendingPermission: nil, pendingNotice: nil,
-            startedAt: now, lastActiveAt: now
+            startedAt: now, lastActiveAt: now,
+            lastLocator: request.locator
         )
         card.lastActiveAt = now
+        card.lastLocator = request.locator
         // Refresh terminal kind if we now have a ppid.
         if card.terminalKind == .unknown, let ppid = request.locator.ppid {
             card.terminalKind = probe(ppid)

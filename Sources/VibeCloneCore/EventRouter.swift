@@ -12,6 +12,7 @@ public actor EventRouter {
     private let history: any HistoryRecording
     private let adapter: any AgentAdapter
     private let notices: NoticeStore?
+    private let aggregator: SessionAggregator?
 
     public var onEventArrived: (@Sendable (EventName) -> Void)?
 
@@ -23,12 +24,14 @@ public actor EventRouter {
                 sessions: ActiveSessions,
                 history: any HistoryRecording,
                 adapter: any AgentAdapter,
-                notices: NoticeStore? = nil) {
+                notices: NoticeStore? = nil,
+                aggregator: SessionAggregator? = nil) {
         self.queue = queue
         self.sessions = sessions
         self.history = history
         self.adapter = adapter
         self.notices = notices
+        self.aggregator = aggregator
     }
 
     /// Route a request for the given event. Always returns a stdout body for the bridge.
@@ -37,6 +40,9 @@ public actor EventRouter {
         let started = Date()
         switch event {
         case .permissionRequest:
+            if let agg = aggregator {
+                await agg.accept(event: event, request: request, notice: nil)
+            }
             let resp = await queue.submitAndAwait(request)
             let body = (try? adapter.encodeStdoutBody(
                 event: event,
@@ -45,6 +51,9 @@ public actor EventRouter {
             )) ?? Data("{}".utf8)
             await history.record(event: event, request: request, decision: resp,
                                  latencyMs: Int(Date().timeIntervalSince(started) * 1000))
+            if let agg = aggregator {
+                await agg.clearPendingPermission(sessionId: sessionId(from: request))
+            }
             return EventHandlingResult(stdoutJSON: body)
 
         case .sessionStart:
@@ -78,6 +87,14 @@ public actor EventRouter {
             decision: ApprovalResponse(decision: .approve),
             latencyMs: Int(Date().timeIntervalSince(started) * 1000)
         )
+        if let agg = aggregator {
+            var noticeForAgg: Notice? = nil
+            if event == .notification, let store = notices {
+                let snap = await store.snapshot()
+                noticeForAgg = snap.first { $0.id == request.id }
+            }
+            await agg.accept(event: event, request: request, notice: noticeForAgg)
+        }
         let body = (try? adapter.encodeStdoutBody(event: event, decision: nil, reason: nil))
             ?? Data("{}".utf8)
         return EventHandlingResult(stdoutJSON: body)

@@ -11,6 +11,7 @@ public struct SessionCard: Identifiable, Hashable, Sendable {
     public var pendingNotice: Notice?
     public var startedAt: Date
     public var lastActiveAt: Date
+    public var lastLocator: TerminalLocator
 
     public enum Activity: Hashable, Sendable {
         case idle
@@ -21,10 +22,12 @@ public struct SessionCard: Identifiable, Hashable, Sendable {
     public init(id: String, source: String, terminalKind: ProbedTerminal,
                 title: String, lastPrompt: String?, activity: Activity,
                 pendingPermission: PermissionRequest?, pendingNotice: Notice?,
-                startedAt: Date, lastActiveAt: Date) {
+                startedAt: Date, lastActiveAt: Date,
+                lastLocator: TerminalLocator = TerminalLocator(tty: nil, cwd: nil, ppid: nil)) {
         self.id = id; self.source = source; self.terminalKind = terminalKind
         self.title = title; self.lastPrompt = lastPrompt; self.activity = activity
         self.pendingPermission = pendingPermission; self.pendingNotice = pendingNotice
         self.startedAt = startedAt; self.lastActiveAt = lastActiveAt
+        self.lastLocator = lastLocator
     }
 }

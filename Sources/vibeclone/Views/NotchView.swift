@@ -22,8 +22,9 @@ struct NotchView: View {
             HStack {
                 Spacer(minLength: 0)
                 Group {
-                    if let req = controller.pending.first {
-                        expanded(req: req, more: max(controller.pendingCount - 1, 0))
+                    if !controller.sessionCards.isEmpty &&
+                       (controller.pendingCount > 0 || controller.notices.count > 0) {
+                        expandedSessionList
                     } else {
                         collapsed
                     }
@@ -42,10 +43,10 @@ struct NotchView: View {
     private var collapsed: some View {
         HStack(spacing: 8) {
             Circle()
-                .fill(controller.activeSessionsCount > 0 ? Color.green : Color.gray.opacity(0.6))
+                .fill(controller.sessionCards.count > 0 ? Color.green : Color.gray.opacity(0.6))
                 .frame(width: 6, height: 6)
-            if controller.activeSessionsCount > 0 {
-                Text("\(controller.activeSessionsCount)")
+            if controller.sessionCards.count > 0 {
+                Text("\(controller.sessionCards.count)")
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
             }
@@ -61,43 +62,14 @@ struct NotchView: View {
         return 200
     }
 
-    // MARK: - Expanded card — same shape, larger
+    // MARK: - Expanded card — renders SessionListView
 
-    private func expanded(req: PermissionRequest, more: Int) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Circle().fill(Color.green).frame(width: 8, height: 8)
-                Text(req.source).bold().foregroundStyle(.white)
-                Text("·").foregroundStyle(.white.opacity(0.5))
-                Text(toolName(req))
-                    .font(.system(.body, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.9))
-                Spacer()
-                if more > 0 {
-                    Text("+\(more)")
-                        .font(.caption.weight(.semibold))
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Capsule().fill(.white.opacity(0.12)))
-                        .foregroundStyle(.white)
-                }
-            }
-            preview(req)
-            HStack(spacing: 8) {
-                Button { controller.jump(req) } label: {
-                    Label("Jump", systemImage: "arrow.up.forward.app")
-                        .padding(.horizontal, 4)
-                }
-                .buttonStyle(.bordered).tint(.white)
-                Spacer()
-                Button("Deny", role: .destructive) { controller.deny(req) }
-                    .buttonStyle(.bordered).tint(.red)
-                Button("Approve") { controller.approve(req) }
-                    .buttonStyle(.borderedProminent).tint(.green)
-                    .keyboardShortcut(.defaultAction)
-            }
+    private var expandedSessionList: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SessionListView(controller: controller)
         }
-        .padding(14)
-        .frame(width: 380)
+        .padding(12)
+        .frame(width: 420)
         .background(notchPill(radius: 22))
         .foregroundStyle(.white)
     }

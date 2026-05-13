@@ -22,6 +22,7 @@ final class MenuBarController {
     let sessions: ActiveSessions
     let history: HistoryWriter
     let noticeStore: NoticeStore
+    let aggregator: SessionAggregator
     let router: EventRouter
     let server: SocketServer
     let installer: HookInstaller
@@ -45,10 +46,12 @@ final class MenuBarController {
         self.sessions = ActiveSessions()
         self.history = HistoryWriter(url: p.historyJSONL)
         self.noticeStore = NoticeStore()
+        self.aggregator = SessionAggregator()
         let adapter = ClaudeCodeAdapter()
         self.router = EventRouter(queue: queue, sessions: sessions,
                                   history: history, adapter: adapter,
-                                  notices: noticeStore)
+                                  notices: noticeStore,
+                                  aggregator: aggregator)
         self.server = SocketServer(router: router, paths: p)
         self.installer = HookInstaller(adapters: [adapter], paths: p)
         boot()
@@ -108,11 +111,14 @@ final class MenuBarController {
                 let list  = await self.queue.pendingList
                 let active = await self.sessions.activeCount
                 let nots = await self.noticeStore.snapshot()
+                await self.aggregator.ageActivities()
+                let cards = await self.aggregator.snapshot()
                 await MainActor.run {
                     self.pendingCount = count
                     self.pending = list
                     self.activeSessionsCount = active
                     self.notices = nots
+                    self.sessionCards = cards
                     if count != self.lastPendingCount {
                         self.lastPendingCount = count
                         self.panelController?.refresh()
@@ -154,8 +160,11 @@ final class MenuBarController {
     }
 
     func jumpToCard(_ card: SessionCard) {
-        Task { try? await jumper.jump(to: TerminalLocator(tty: nil, cwd: nil, ppid: nil)) }
-        // Real wiring in Task P4.11 — for now just a no-op placeholder that compiles.
+        let loc = card.lastLocator
+        Task {
+            do { try await jumper.jump(to: loc) }
+            catch { NSLog("vibeclone: jump failed: \(error)") }
+        }
     }
 
     func pickAskOption(card: SessionCard, option: AskOption) {

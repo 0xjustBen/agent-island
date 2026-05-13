@@ -41,10 +41,12 @@ struct PermissionDiffCard: View {
             HStack {
                 Button("Deny ⌘N", role: .destructive, action: onDeny)
                     .buttonStyle(.bordered)
+                    .keyboardShortcut("n", modifiers: .command)
                 Spacer()
                 Button("Allow ⌘Y", action: onApprove)
                     .buttonStyle(.borderedProminent).tint(.white)
                     .foregroundStyle(.black)
+                    .keyboardShortcut("y", modifiers: .command)
             }
         }
         .padding(12)

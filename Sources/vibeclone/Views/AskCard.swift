@@ -42,6 +42,7 @@ struct AskCard: View {
                             .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.06)))
                         }
                         .buttonStyle(.plain)
+                        .keyboardShortcut(KeyEquivalent(Character("\(opt.number)")), modifiers: .command)
                     }
                 }
             }
