@@ -15,10 +15,24 @@ public struct CompositeJumper: TerminalJumper {
         self.prober = prober
     }
 
-    /// Default Phase 1 composite. Phase 3 overrides with Phase 3 default.
+    /// Phase 3 default composite: all 9 jumpers + TerminalProber.
     public static func `default`() -> CompositeJumper {
-        CompositeJumper(jumpers: [ITerm2Jumper(), TerminalAppJumper()],
-                        prober: nil)
+        let iterm = ITerm2Jumper()
+        let term  = TerminalAppJumper()
+        let ghost = GhosttyJumper()
+        let warp  = WarpJumper()
+        let code  = VSCodeJumper()
+        let cur   = CursorJumper()
+        let alac  = AlacrittyJumper()
+        let kitty = KittyJumper()
+        // Host jumpers for tmux: everything except tmux itself.
+        let hosts: [any TerminalJumper] = [iterm, term, ghost, warp, code, cur, alac, kitty]
+        let tmux  = TmuxJumper(hostJumpers: hosts)
+
+        return CompositeJumper(
+            jumpers: [tmux, iterm, term, ghost, warp, code, cur, alac, kitty],
+            prober: { ppid in TerminalProber.probeLive(startPid: ppid) }
+        )
     }
 
     public func canJump(to loc: TerminalLocator) async -> Bool {

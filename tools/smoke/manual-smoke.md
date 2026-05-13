@@ -76,3 +76,28 @@ Parity-checked against Vibe Island v1.0.33 behavior.
 
 ### Zero-telemetry recheck (Phase 2)
 35. With panel/sounds/hotkey active: `lsof -i -P | grep VibeClone | grep -v LISTEN` → still no outbound TCP. No Sentry, no analytics.
+
+---
+
+## Phase 3 additions — terminal fan-out
+
+### Per-terminal jump (each requires the named terminal app installed and a claude session running inside it)
+
+36. **Ghostty**: run `claude -p "echo hi"` inside Ghostty, click Jump → Ghostty window front.
+37. **Warp**: same flow in Warp → Warp window front.
+38. **VS Code integrated terminal**: open VS Code, open a folder, open its terminal, run `claude`. Click Jump → VS Code window front + that folder window focused.
+39. **Cursor integrated terminal**: same as VS Code → Cursor window front.
+40. **Alacritty**: run `claude` in Alacritty, click Jump → Alacritty window front (no tab targeting).
+41. **kitty**: run `claude` in kitty. Confirm `~/.config/kitty/kitty.conf` has `allow_remote_control yes`. Click Jump → kitty focuses the right window.
+42. **tmux inside iTerm2**: start tmux in iTerm2, create 3 windows, run `claude` in window 2. Click Jump → iTerm2 front + tmux active window switched to 2.
+
+### Prober verification
+
+43. `python3 -c "import os; print(os.getppid())"` from each terminal — note the ppid.
+44. Trigger `claude -p` from inside each terminal. Inspect `~/Library/Logs/VibeClone/history.jsonl` for the PermissionRequest entry — `cwd` and `tty` fields should match the source terminal.
+
+### Regression check (Phase 1 + 2 still work)
+
+45. iTerm2 jump still lands correct tab (Phase 1 tty match).
+46. Terminal.app jump still lands correct window.
+47. Floating panel + sounds + markdown preview still work as before.
