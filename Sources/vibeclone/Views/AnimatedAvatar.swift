@@ -47,10 +47,11 @@ struct AnimatedAvatar: View {
                 .fill(accent.opacity(0.18))
                 .frame(width: 24, height: 24)
 
-            // Emoji
-            Text(brand.emoji)
-                .font(.system(size: 14))
-                .scaleEffect(pulse ? 1.10 : 1.0)
+            // Brand symbol (SF Symbol approximating each agent)
+            Image(systemName: brand.symbolName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(accent)
+                .scaleEffect(pulse ? 1.12 : 1.0)
                 .animation(
                     working
                         ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true)

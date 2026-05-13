@@ -47,31 +47,47 @@ struct NotchView: View {
 
     // MARK: - Collapsed (matches notch width, drops directly out of it)
 
+    /// Compact pill: brand icon + top session title + count badge.
     private var collapsed: some View {
         Button {
             manualExpand = true
         } label: {
             HStack(spacing: 8) {
-                Circle()
-                    .fill(controller.sessionCards.count > 0 ? Color.green : Color.gray.opacity(0.6))
-                    .frame(width: 6, height: 6)
-                if controller.sessionCards.count > 0 {
-                    Text("\(controller.sessionCards.count)")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                if let top = controller.sessionCards.first {
+                    AnimatedAvatar(brand: AgentBranding.brand(for: top.source),
+                                   activity: top.activity)
+                        .scaleEffect(0.65)
+                        .frame(width: 22, height: 22)
+                    Text(top.title)
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer(minLength: 4)
+                    if controller.sessionCards.count > 1 {
+                        Text("\(controller.sessionCards.count)")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .padding(.horizontal, 6).padding(.vertical, 1)
+                            .background(Capsule().fill(.white.opacity(0.18)))
+                    }
+                } else {
+                    // No sessions — minimal dot.
+                    Circle().fill(Color.gray.opacity(0.6)).frame(width: 6, height: 6)
+                    Spacer(minLength: 0)
                 }
             }
-            .padding(.horizontal, 16)
-            .frame(width: collapsedWidth, height: 14)
-            .background(notchPill(radius: 10))
+            .padding(.horizontal, 12)
+            .frame(width: collapsedWidth, height: 28)
+            .background(notchPill(radius: 14))
         }
         .buttonStyle(.plain)
     }
 
-    /// Width matches notch underside so visually it IS the notch dropping down.
+    /// Wider pill so the title has room. Falls back to fixed 280pt when no notch.
     private var collapsedWidth: CGFloat {
-        if let info = notchInfo { return info.notchWidth + 4 }
-        return 200
+        if let info = notchInfo { return max(info.notchWidth + 100, 260) }
+        return 280
     }
 
     // MARK: - Expanded card — renders SessionListView
