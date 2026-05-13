@@ -6,6 +6,12 @@
 Approve tool calls from your notch. See every agent at a glance.
 Auto-approve safely. Pick options without leaving the notch.
 
+### 🌐 [**See it in action → 0xjustben.github.io/agent-island**](https://0xjustben.github.io/agent-island/)
+
+Interactive demo · feature grid · FAQ · install guide
+
+---
+
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black?logo=apple&logoColor=white)](#requirements)
 [![Swift 5.10](https://img.shields.io/badge/Swift-5.10-orange?logo=swift&logoColor=white)](#building-from-source)
 [![Tests](https://img.shields.io/badge/tests-129%20passing-brightgreen)](#tests)
@@ -64,38 +70,11 @@ weren't watching.
 
 ---
 
-## 🎬 Demo
+## 🎬 See it in action
 
-<picture>
-  <img alt="Notch demo — permission card drops out of the macOS camera notch with an Approve / Deny choice and a destructive-command warning." src="assets/notch-demo.svg" width="100%">
-</picture>
+Live interactive demo, animated notch, feature grid, FAQ:
 
-<details>
-<summary><b>📋 AskUserQuestion picker — agents ask, you click</b></summary>
-
-<br/>
-
-<picture>
-  <img alt="Ask demo — agent multi-choice options rendered as clickable cards under the notch." src="assets/ask-demo.svg" width="100%">
-</picture>
-
-When an agent calls `AskUserQuestion` (or any other multi-choice tool),
-Agent Island parses the options out of the tool input and shows them as
-buttons. Click one — the digit + Return is typed into the correct
-terminal automatically, so the agent keeps moving.
-
-</details>
-
-<details>
-<summary><b>🔁 How a tool call flows through Agent Island (animated)</b></summary>
-
-<br/>
-
-<picture>
-  <img alt="Animated flow — Claude Code → bridge → app → user → permission decision back to Claude." src="assets/flow-animated.svg" width="100%">
-</picture>
-
-</details>
+### **[👉 0xjustben.github.io/agent-island](https://0xjustben.github.io/agent-island/)**
 
 ---
 
