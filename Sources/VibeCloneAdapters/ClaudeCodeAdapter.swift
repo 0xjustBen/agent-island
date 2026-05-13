@@ -48,10 +48,18 @@ public struct ClaudeCodeAdapter: AgentAdapter {
     public func encodeStdoutBody(event: EventName,
                                  decision: ApprovalDecision?,
                                  reason: String?) throws -> Data {
-        guard event == .permissionRequest else { return Data("{}".utf8) }
+        // Permission gating runs through PreToolUse (CC's real hook).
+        // PermissionRequest kept as alias for legacy/tests.
+        let hookName: String
+        switch event {
+        case .preToolUse:        hookName = "PreToolUse"
+        case .permissionRequest: hookName = "PermissionRequest"
+        default:                 return Data("{}".utf8)
+        }
+        guard let decision else { return Data("{}".utf8) }
         let decisionStr: String = (decision == .approve) ? "allow" : "deny"
         var inner: [String: Any] = [
-            "hookEventName": "PermissionRequest",
+            "hookEventName": hookName,
             "permissionDecision": decisionStr
         ]
         if let r = reason { inner["permissionDecisionReason"] = r }

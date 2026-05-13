@@ -14,7 +14,7 @@ private struct FakeAdapter: AgentAdapter {
         (.preToolUse, [:])
     }
     func encodeStdoutBody(event: EventName, decision: ApprovalDecision?, reason: String?) throws -> Data {
-        if event == .permissionRequest {
+        if event == .permissionRequest || event == .preToolUse {
             let str = "allow_or_deny=\(decision?.rawValue ?? "nil")"
             return Data(str.utf8)
         }
@@ -113,10 +113,24 @@ private func mkReq(_ id: String, sid: String = "sess1", source: String = "claude
 @Test func record_only_events_produce_empty_body() async throws {
     let q = ApprovalQueue(); let s = ActiveSessions(); let h = FakeHistory()
     let r = EventRouter(queue: q, sessions: s, history: h, adapter: FakeAdapter())
-    for e in [EventName.preToolUse, .postToolUse, .notification, .userPromptSubmit, .preCompact] {
+    for e in [EventName.postToolUse, .notification, .userPromptSubmit, .preCompact] {
         let res = await r.route(event: e, request: mkReq("r"))
         #expect(res.stdoutJSON == Data("{}".utf8))
     }
     let snap = await h.snapshot()
-    #expect(snap.count == 5)
+    #expect(snap.count == 4)
+}
+
+@Test func routes_preToolUse_through_queue() async throws {
+    let q = ApprovalQueue(timeout: .seconds(5))
+    let s = ActiveSessions()
+    let h = FakeHistory()
+    let r = EventRouter(queue: q, sessions: s, history: h, adapter: FakeAdapter())
+
+    Task { try? await Task.sleep(for: .milliseconds(30))
+           await q.resolve(id: "p1", with: ApprovalResponse(decision: .approve)) }
+    let res = await r.route(event: .preToolUse, request: mkReq("p1"))
+    #expect(String(data: res.stdoutJSON, encoding: .utf8) == "allow_or_deny=approve")
+    let snap = await h.snapshot()
+    #expect(snap.contains(where: { $0.0 == .preToolUse && $0.2 == .approve }))
 }

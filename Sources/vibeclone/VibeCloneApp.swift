@@ -1,7 +1,6 @@
 import SwiftUI
 import VibeCloneCore
 
-@main
 struct VibeCloneApp: App {
     @State private var controller = MenuBarController()
 
@@ -11,9 +10,9 @@ struct VibeCloneApp: App {
         } label: {
             let count = controller.pendingCount
             if count > 0 {
-                Image(systemName: "bell.badge.fill")
+                Image(systemName: "hexagon.fill")
             } else {
-                Image(systemName: "bell")
+                Image(systemName: "hexagongrid")
             }
         }
         .menuBarExtraStyle(.window)

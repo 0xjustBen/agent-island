@@ -23,8 +23,6 @@ final class MenuBarController {
     let history: HistoryWriter
     let noticeStore: NoticeStore
     let aggregator: SessionAggregator
-    let quotaTracker: QuotaTracker
-    private(set) var quotaSnapshot: QuotaSnapshot = .empty
     let router: EventRouter
     let server: SocketServer
     let installer: HookInstaller
@@ -33,8 +31,12 @@ final class MenuBarController {
     private(set) var panelController: PanelController!
     private(set) var soundPlayer: SoundPlayer!
     private(set) var hotkeyMonitor: HotkeyMonitor?
-    private(set) var jsonlPoller: JSONLPollerTimer?
+    private(set) var historyWindow: HistoryWindow?
+    private(set) var onboarding: OnboardingWindow?
     private var lastPendingCount: Int = -1
+    private var lastScreenID: ObjectIdentifier?
+    private var lastNotificationAt: Date?
+    var notchExpanded: Bool = false
 
     init() {
         let p = Paths()
@@ -50,19 +52,23 @@ final class MenuBarController {
         self.history = HistoryWriter(url: p.historyJSONL)
         self.noticeStore = NoticeStore()
         self.aggregator = SessionAggregator()
-        self.quotaTracker = QuotaTracker()
         let adapter = ClaudeCodeAdapter()
         self.router = EventRouter(queue: queue, sessions: sessions,
                                   history: history, adapter: adapter,
                                   notices: noticeStore,
-                                  aggregator: aggregator,
-                                  quota: quotaTracker)
+                                  aggregator: aggregator)
         self.server = SocketServer(router: router, paths: p)
         self.installer = HookInstaller(adapters: [adapter], paths: p)
         boot()
     }
 
     private func boot() {
+        // Prompt for Accessibility on first launch — needed by
+        // KeystrokeInjector to deliver synthesized keystrokes to terminals.
+        let promptKey = "AXTrustedCheckOptionPrompt" as CFString
+        let opts: CFDictionary = [promptKey: true] as CFDictionary
+        _ = AXIsProcessTrustedWithOptions(opts)
+
         // Write lastrun JSON: cleanExit:false, flipped to true on graceful quit.
         try? paths.ensureAll()
         let lastrun: [String: Any] = [
@@ -98,9 +104,12 @@ final class MenuBarController {
 
         panelController.updateForMode(prefs.displayMode)
 
-        let poller = JSONLPollerTimer(quota: quotaTracker)
-        poller.start(interval: 60)
-        self.jsonlPoller = poller
+        let onb = OnboardingWindow(controller: self, paths: paths)
+        self.onboarding = onb
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            onb.showIfFirstRun()
+        }
 
         if prefs.hotkeyEnabled {
             let mon = HotkeyMonitor { [weak self] in
@@ -121,12 +130,14 @@ final class MenuBarController {
                 let active = await self.sessions.activeCount
                 let nots = await self.noticeStore.snapshot()
                 await self.aggregator.ageActivities()
+                await self.aggregator.pruneStale(staleAfter: 600)
                 let cards = await self.aggregator.snapshot()
-                await self.quotaTracker.rolloverIfNewDay()
-                let qs = await self.quotaTracker.snapshot()
                 // Auto-approve any pending request whose tool matches prefs.
                 let snap = await MainActor.run { self.prefs }
                 for req in list {
+                    // Never auto-approve a Bash command that matches the
+                    // dangerous-pattern heuristic — always force human review.
+                    if DangerousCommand.isDangerous(payload: req.payload) { continue }
                     if snap.shouldAutoApprove(toolName: Self.toolName(req)) {
                         await self.queue.resolve(
                             id: req.id,
@@ -140,10 +151,21 @@ final class MenuBarController {
                     self.activeSessionsCount = active
                     self.notices = nots
                     self.sessionCards = cards
-                    self.quotaSnapshot = qs
                     if count != self.lastPendingCount {
                         self.lastPendingCount = count
                         self.panelController?.refresh()
+                    }
+                    // Follow mouse-active screen: reposition when cursor
+                    // crosses screens. Skip when user has lockToScreen on.
+                    if !self.prefs.lockToScreen {
+                        let mouse = NSEvent.mouseLocation
+                        if let hit = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) {
+                            let sid = ObjectIdentifier(hit)
+                            if sid != self.lastScreenID {
+                                self.lastScreenID = sid
+                                self.panelController?.refresh()
+                            }
+                        }
                     }
                 }
                 try? await Task.sleep(for: .milliseconds(200))
@@ -154,11 +176,15 @@ final class MenuBarController {
     @MainActor
     private func handleEventArrived(_ event: EventName) {
         switch event {
-        case .permissionRequest:
+        case .permissionRequest, .preToolUse:
             soundPlayer.play(.permission, enabled: prefs.soundsEnabled)
         case .notification:
+            lastNotificationAt = Date()
             soundPlayer.play(.notification, enabled: prefs.soundsEnabled)
         case .stop:
+            // Suppress idle ding if a Notification just fired — they bracket
+            // the same "agent waiting" moment and double-ding is noisy.
+            if let t = lastNotificationAt, Date().timeIntervalSince(t) < 30 { return }
             soundPlayer.play(.idle, enabled: prefs.soundsEnabled)
         default:
             break
@@ -182,8 +208,41 @@ final class MenuBarController {
         Task { try? await jumper.jump(to: notice.locator) }
     }
 
+    /// Add a tool to the auto-approve allow-list and persist preferences.
+    func alwaysAllow(tool: String) {
+        guard !tool.isEmpty else { return }
+        var set = Set(prefs.autoApproveTools)
+        set.insert(tool)
+        prefs.autoApproveTools = Array(set).sorted()
+    }
+
     func deny(_ request: PermissionRequest, reason: String? = nil) {
         Task { await queue.resolve(id: request.id, with: ApprovalResponse(decision: .deny, reason: reason)) }
+    }
+
+    func clearAllSessions() {
+        Task { await aggregator.clearAll() }
+    }
+
+    func resetPrefs() {
+        prefs = AppPreferences()
+        panelController?.updateForMode(prefs.displayMode)
+    }
+
+    func revealLogsInFinder() {
+        let url = paths.historyJSONL
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.selectFile(url.path, inFileViewerRootedAtPath: "")
+        } else {
+            NSWorkspace.shared.open(url.deletingLastPathComponent())
+        }
+    }
+
+    func openHistoryViewer() {
+        if historyWindow == nil {
+            historyWindow = HistoryWindow(paths: paths)
+        }
+        historyWindow?.show()
     }
 
     func jumpToCard(_ card: SessionCard) {
@@ -195,9 +254,16 @@ final class MenuBarController {
     }
 
     func pickAskOption(card: SessionCard, option: AskOption) {
-        // Phase 7: inject keystrokes. For now, dismiss notice and jump.
         if let n = card.pendingNotice { Task { await noticeStore.dismiss(id: n.id) } }
-        jumpToCard(card)
+        let sid = card.id
+        let loc = card.lastLocator
+        let number = option.number
+        Task {
+            await aggregator.clearPendingNotice(sessionId: sid)
+            try? await jumper.jump(to: loc)
+            try? await Task.sleep(for: .milliseconds(350))
+            await MainActor.run { KeystrokeInjector.typeDigitsAndReturn(number) }
+        }
     }
 
     func jump(_ request: PermissionRequest) {
@@ -212,7 +278,6 @@ final class MenuBarController {
         // Mark clean exit + stop everything.
         refreshTask?.cancel()
         hotkeyMonitor?.stop()
-        jsonlPoller?.stop()
         installer.stop()
         server.stop()
         let lastrun: [String: Any] = [

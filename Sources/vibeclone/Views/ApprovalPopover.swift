@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import VibeCloneCore
 
 struct ApprovalPopover: View {
@@ -59,6 +60,22 @@ struct ApprovalPopover: View {
                 ))
                 .toggleStyle(.switch)
                 Spacer()
+                Button { controller.openHistoryViewer() } label: {
+                    Image(systemName: "clock.arrow.circlepath")
+                }
+                .buttonStyle(.plain).help("History")
+                Button { controller.revealLogsInFinder() } label: {
+                    Image(systemName: "doc.text.magnifyingglass")
+                }
+                .buttonStyle(.plain).help("Reveal logs in Finder")
+                Button { controller.clearAllSessions() } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.plain).help("Clear all sessions")
+                Button { controller.resetPrefs() } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+                .buttonStyle(.plain).help("Reset preferences")
                 Button {
                     controller.shutdown()
                     NSApp.terminate(nil)
@@ -90,6 +107,37 @@ struct ApprovalPopover: View {
                         .toggleStyle(.button)
                         .controlSize(.mini)
                     }
+                }
+                Spacer()
+            }
+            // Row 3: screen lock
+            HStack(spacing: 8) {
+                Toggle("Lock to screen", isOn: Binding(
+                    get: { controller.prefs.lockToScreen },
+                    set: {
+                        controller.prefs.lockToScreen = $0
+                        if $0, controller.prefs.lockedScreenName.isEmpty,
+                           let s = NSScreen.main {
+                            controller.prefs.lockedScreenName = s.localizedName
+                        }
+                        controller.panelController?.refresh()
+                    }
+                ))
+                .toggleStyle(.switch)
+                if controller.prefs.lockToScreen {
+                    Picker("", selection: Binding(
+                        get: { controller.prefs.lockedScreenName },
+                        set: {
+                            controller.prefs.lockedScreenName = $0
+                            controller.panelController?.refresh()
+                        }
+                    )) {
+                        ForEach(NSScreen.screens, id: \.localizedName) { screen in
+                            Text(screen.localizedName).tag(screen.localizedName)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .frame(maxWidth: 180)
                 }
                 Spacer()
             }

@@ -21,8 +21,12 @@ public enum EventName: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// Hook timeout in seconds. Only PermissionRequest blocks for human review.
+    /// Hook timeout in seconds. PreToolUse blocks for human review.
+    /// PermissionRequest is legacy (CC never emits it); kept for compatibility.
     public var timeoutSeconds: Int? {
-        self == .permissionRequest ? 86_400 : nil
+        switch self {
+        case .preToolUse, .permissionRequest: return 86_400
+        default: return nil
+        }
     }
 }

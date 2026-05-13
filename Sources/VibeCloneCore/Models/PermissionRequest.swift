@@ -14,9 +14,14 @@ public struct PermissionRequest: Codable, Hashable, Sendable, Identifiable {
     }
 
     /// Stable hash of (source, tool/event, payload) for dedup in ApprovalQueue.
+    /// JSONEncoder dict serialization isn't key-ordered by default, so we
+    /// route through JSONSerialization with `.sortedKeys` for a stable byte
+    /// stream across calls.
     public var dedupKey: String {
-        let payloadData = (try? JSONEncoder().encode(payload)) ?? Data()
-        return "\(source)|\(payloadData.fnv1a64Hex)"
+        let unwrapped = JSONValueWire.unwrap(.object(payload))
+        let data = (try? JSONSerialization.data(withJSONObject: unwrapped,
+                                                options: [.sortedKeys])) ?? Data()
+        return "\(source)|\(data.fnv1a64Hex)"
     }
 }
 

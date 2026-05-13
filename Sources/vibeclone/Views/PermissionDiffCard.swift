@@ -5,52 +5,119 @@ struct PermissionDiffCard: View {
     let request: PermissionRequest
     let onApprove: () -> Void
     let onDeny: () -> Void
+    var onAlwaysAllow: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
-                Circle().fill(.orange).frame(width: 8, height: 8)
-                Text("Permission Request")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.85))
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.orange)
+                Text("Permission needed")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.orange)
+                Spacer()
             }
-            HStack(spacing: 6) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.yellow)
-                Text(toolName).font(.system(size: 14, weight: .bold)).foregroundStyle(.orange)
+            HStack(spacing: 8) {
+                Text(toolName)
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 8).padding(.vertical, 3)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(.orange.opacity(0.18)))
+                    .foregroundStyle(.orange)
                 if let path = filePath {
-                    Text(path).font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.85))
-                        .lineLimit(1)
+                    Text(path)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(1).truncationMode(.middle)
                 }
+                Spacer()
             }
-            if let lines = diffLines, !lines.isEmpty {
+            if let plan = planText {
+                ScrollView {
+                    Text(MarkdownRenderer.render(plan))
+                        .font(.system(size: 12))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .foregroundStyle(.white)
+                        .padding(10)
+                }
+                .frame(maxHeight: 220)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.10)))
+            } else if let lines = diffLines, !lines.isEmpty {
                 diffBlock(lines)
                 let (added, removed) = TextDiffer.stats(lines)
-                Text("+\(added) -\(removed)")
+                Text("+\(added)  −\(removed)")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.55))
             } else if let cmd = bashCommand {
                 Text(cmd)
                     .font(.system(size: 12, design: .monospaced))
-                    .padding(8)
+                    .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(.white.opacity(0.06)))
-                    .foregroundStyle(.white.opacity(0.85))
+                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.10)))
+                    .foregroundStyle(.white)
             }
-            HStack {
-                Button("Deny ⌘N", role: .destructive, action: onDeny)
-                    .buttonStyle(.bordered)
-                    .keyboardShortcut("n", modifiers: .command)
-                Spacer()
-                Button("Allow ⌘Y", action: onApprove)
-                    .buttonStyle(.borderedProminent).tint(.white)
-                    .foregroundStyle(.black)
-                    .keyboardShortcut("y", modifiers: .command)
+            if isDangerous {
+                Text("⚠︎ Looks destructive — review carefully")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.red)
+            }
+            HStack(spacing: 8) {
+                Button(action: onDeny) {
+                    HStack(spacing: 6) {
+                        cmdBadge("N", tint: .red)
+                        Text("Deny").font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 7)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color(white: 0.10)))
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut("n", modifiers: .command)
+
+                Button(action: onApprove) {
+                    HStack(spacing: 6) {
+                        cmdBadge("Y", tint: .green)
+                        Text("Approve").font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 10).padding(.vertical, 7)
+                    .frame(maxWidth: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Color.green.opacity(0.30)))
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut("y", modifiers: .command)
+            }
+            if let onAlwaysAllow, !isDangerous {
+                Button(action: onAlwaysAllow) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.shield")
+                            .font(.system(size: 10))
+                        Text("Always allow \(toolName)")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundStyle(.cyan)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Capsule().fill(.cyan.opacity(0.12)))
+                }
+                .buttonStyle(.plain)
+                .help("Add \(toolName) to the auto-approve allow-list")
             }
         }
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 12).fill(.black.opacity(0.6)))
+        .padding(14)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Color.black))
+    }
+
+    private func cmdBadge(_ key: String, tint: Color) -> some View {
+        HStack(spacing: 1) {
+            Image(systemName: "command")
+                .font(.system(size: 9, weight: .bold))
+            Text(key)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+        }
+        .foregroundStyle(tint)
+        .padding(.horizontal, 6).padding(.vertical, 3)
+        .background(RoundedRectangle(cornerRadius: 5).fill(tint.opacity(0.20)))
     }
 
     private var toolName: String {
@@ -64,6 +131,19 @@ struct PermissionDiffCard: View {
             return p
         }
         return nil
+    }
+
+    /// ExitPlanMode tool carries the agent's proposed plan in tool_input.plan.
+    private var planText: String? {
+        guard toolName == "ExitPlanMode",
+              case .object(let input) = request.payload["tool_input"] ?? .null,
+              case .string(let p) = input["plan"] ?? .null,
+              !p.isEmpty else { return nil }
+        return p
+    }
+
+    private var isDangerous: Bool {
+        DangerousCommand.isDangerous(payload: request.payload)
     }
 
     private var bashCommand: String? {
