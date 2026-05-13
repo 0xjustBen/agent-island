@@ -4,6 +4,7 @@ import VibeCloneCore
 
 public struct ITerm2Jumper: TerminalJumper {
     public let id = "iterm2"
+    public let probedKind: ProbedTerminal = .iTerm2
     public init() {}
 
     public func canJump(to: TerminalLocator) async -> Bool {
