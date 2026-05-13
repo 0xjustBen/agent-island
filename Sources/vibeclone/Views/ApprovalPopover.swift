@@ -52,7 +52,21 @@ struct ApprovalPopover: View {
 
     private var footer: some View {
         HStack {
-            Toggle("Auto-heal hooks", isOn: Binding(
+            Picker("Display", selection: Binding(
+                get: { controller.prefs.displayMode },
+                set: { newValue in
+                    controller.prefs.displayMode = newValue
+                    controller.panelController?.updateForMode(newValue)
+                }
+            )) {
+                Text("Notch").tag(DisplayMode.notch)
+                Text("Bar").tag(DisplayMode.floatingBar)
+                Text("Menu only").tag(DisplayMode.menuBarOnly)
+            }
+            .pickerStyle(.menu)
+            .frame(maxWidth: 150)
+
+            Toggle("Auto-heal", isOn: Binding(
                 get: { controller.prefs.autoHealHooks },
                 set: { controller.prefs.autoHealHooks = $0 }
             ))
