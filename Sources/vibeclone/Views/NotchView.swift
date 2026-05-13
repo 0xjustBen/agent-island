@@ -10,9 +10,15 @@ struct NotchView: View {
     @Bindable var controller: MenuBarController
     let style: NotchStyle
 
+    /// Notch geometry — drives "drops out of notch" shape. nil for .bar.
+    private var notchInfo: NotchInfo? {
+        if case .notch(let info) = style, info.hasNotch { return info }
+        return nil
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            Spacer().frame(height: topPadding)        // clear notch / menu-bar
+            Spacer().frame(height: topClearance)
             HStack {
                 Spacer(minLength: 0)
                 Group {
@@ -22,7 +28,7 @@ struct NotchView: View {
                         collapsed
                     }
                 }
-                .animation(.spring(response: 0.35, dampingFraction: 0.7),
+                .animation(.spring(response: 0.35, dampingFraction: 0.78),
                            value: controller.pendingCount)
                 .fixedSize()
                 Spacer(minLength: 0)
@@ -31,56 +37,86 @@ struct NotchView: View {
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Collapsed
+    // MARK: - Collapsed (matches notch width, drops directly out of it)
 
     private var collapsed: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Circle()
-                .fill(controller.activeSessionsCount > 0 ? Color.green : Color.gray)
+                .fill(controller.activeSessionsCount > 0 ? Color.green : Color.gray.opacity(0.6))
                 .frame(width: 6, height: 6)
-            Text(idleText).font(.caption2.monospaced())
+            if controller.activeSessionsCount > 0 {
+                Text("\(controller.activeSessionsCount)")
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-        .background(Capsule().fill(.black.opacity(0.85)))
-        .foregroundStyle(.white)
+        .padding(.horizontal, 16)
+        .frame(width: collapsedWidth, height: 14)
+        .background(notchPill(radius: 10))
     }
 
-    private var idleText: String {
-        if controller.activeSessionsCount > 0 {
-            return "\(controller.activeSessionsCount) active"
-        }
-        return "vibeclone"
+    /// Width matches notch underside so visually it IS the notch dropping down.
+    private var collapsedWidth: CGFloat {
+        if let info = notchInfo { return info.notchWidth + 4 }
+        return 200
     }
 
-    // MARK: - Expanded
+    // MARK: - Expanded card — same shape, larger
 
     private func expanded(req: PermissionRequest, more: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(req.source).bold()
-                Text("·").foregroundStyle(.secondary)
-                Text(toolName(req)).font(.system(.body, design: .monospaced))
+                Circle().fill(Color.green).frame(width: 8, height: 8)
+                Text(req.source).bold().foregroundStyle(.white)
+                Text("·").foregroundStyle(.white.opacity(0.5))
+                Text(toolName(req))
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.9))
                 Spacer()
                 if more > 0 {
-                    Text("+\(more) more")
-                        .font(.caption).foregroundStyle(.secondary)
+                    Text("+\(more)")
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Capsule().fill(.white.opacity(0.12)))
+                        .foregroundStyle(.white)
                 }
             }
             preview(req)
-            HStack {
-                Button("Jump") { controller.jump(req) }
+            HStack(spacing: 8) {
+                Button { controller.jump(req) } label: {
+                    Label("Jump", systemImage: "arrow.up.forward.app")
+                        .padding(.horizontal, 4)
+                }
+                .buttonStyle(.bordered).tint(.white)
                 Spacer()
                 Button("Deny", role: .destructive) { controller.deny(req) }
+                    .buttonStyle(.bordered).tint(.red)
                 Button("Approve") { controller.approve(req) }
+                    .buttonStyle(.borderedProminent).tint(.green)
                     .keyboardShortcut(.defaultAction)
             }
         }
         .padding(14)
         .frame(width: 380)
-        .background(RoundedRectangle(cornerRadius: 18).fill(.black.opacity(0.88)))
+        .background(notchPill(radius: 22))
         .foregroundStyle(.white)
     }
+
+    // MARK: - Shape — top corners flush with notch, bottom corners rounded
+
+    @ViewBuilder
+    private func notchPill(radius: CGFloat) -> some View {
+        UnevenRoundedRectangle(
+            topLeadingRadius: 0,
+            bottomLeadingRadius: radius,
+            bottomTrailingRadius: radius,
+            topTrailingRadius: 0,
+            style: .continuous
+        )
+        .fill(Color.black)
+    }
+
+    // MARK: - Helpers
 
     private func toolName(_ r: PermissionRequest) -> String {
         if case .string(let s) = r.payload["tool_name"] ?? .null { return s }
@@ -93,9 +129,10 @@ struct NotchView: View {
             Text(MarkdownRenderer.render(md))
                 .lineLimit(5)
                 .font(.callout)
-                .padding(8)
+                .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.10)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.10)))
+                .foregroundStyle(.white)
         } else {
             let text: String = {
                 if case .object(let input) = r.payload["tool_input"] ?? .null,
@@ -107,9 +144,10 @@ struct NotchView: View {
             Text(text)
                 .lineLimit(3)
                 .font(.system(.callout, design: .monospaced))
-                .padding(8)
+                .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.10)))
+                .background(RoundedRectangle(cornerRadius: 10).fill(.white.opacity(0.10)))
+                .foregroundStyle(.white)
         }
     }
 
@@ -122,12 +160,10 @@ struct NotchView: View {
         return nil
     }
 
-    // MARK: - Top padding tuning
-
-    private var topPadding: CGFloat {
+    private var topClearance: CGFloat {
         switch style {
-        case .notch(let info): return info.notchHeight    // flush with notch bottom
-        case .bar: return 28                              // below menu bar
+        case .notch(let info): return info.notchHeight     // flush with notch bottom
+        case .bar: return 28                                // below menu bar
         }
     }
 }
