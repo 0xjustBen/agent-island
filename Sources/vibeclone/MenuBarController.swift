@@ -254,22 +254,42 @@ final class MenuBarController {
     }
 
     func pickAskOption(card: SessionCard, option: AskOption) {
-        NSLog("vibeclone: pickAskOption number=\(option.number) tty=\(card.lastLocator.tty ?? "nil")")
         if let n = card.pendingNotice { Task { await noticeStore.dismiss(id: n.id) } }
         let sid = card.id
         let loc = card.lastLocator
         let number = option.number
         Task {
             await aggregator.clearPendingNotice(sessionId: sid)
-            do { try await jumper.jump(to: loc) }
-            catch { NSLog("vibeclone: pickAskOption jump failed: \(error)") }
+            try? await jumper.jump(to: loc)
+            // Fallback: if jumper didn't change frontmost (tty=nil → no matcher
+            // claimed it), force-activate the most likely terminal app so the
+            // synthesized keystroke lands somewhere useful.
+            await MainActor.run { Self.ensureTerminalFrontmost() }
             try? await Task.sleep(for: .milliseconds(350))
             await MainActor.run {
-                let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "?"
-                NSLog("vibeclone: typing \(number) front=\(front) tty=\(loc.tty ?? "nil")")
                 KeystrokeInjector.typeDigitsAndReturn(number, tty: loc.tty)
             }
         }
+    }
+
+    /// Bring whichever terminal-class app is running to the front. Picks the
+    /// most recently active one. No-op if none running.
+    private static func ensureTerminalFrontmost() {
+        let candidates: Set<String> = [
+            "com.apple.Terminal",
+            "com.googlecode.iterm2",
+            "co.zeit.hyper",
+            "io.alacritty",
+            "com.mitchellh.ghostty",
+            "dev.warp.Warp-Stable",
+            "net.kovidgoyal.kitty"
+        ]
+        let running = NSWorkspace.shared.runningApplications
+            .filter { candidates.contains($0.bundleIdentifier ?? "") }
+            .sorted { ($0.launchDate ?? .distantPast) > ($1.launchDate ?? .distantPast) }
+        guard let app = running.first else { return }
+        if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == app.bundleIdentifier { return }
+        app.activate(options: [])
     }
 
     func jump(_ request: PermissionRequest) {

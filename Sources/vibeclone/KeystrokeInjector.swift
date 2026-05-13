@@ -10,21 +10,9 @@ import Darwin
 ///    have a tty path (jumper couldn't resolve, remote sessions, …).
 enum KeystrokeInjector {
     static func typeDigitsAndReturn(_ n: Int, tty: String? = nil) {
-        // Preferred: CGEvent.post — what every native mac tool uses
-        // (Alfred, Raycast, Hammerspoon). Requires Accessibility permission;
-        // stable across launches once the app codesign identity is stable.
-        if AXIsProcessTrusted(), postCGEvent(digits: n) {
-            NSLog("vibeclone: keystroke via CGEvent")
-            return
-        }
-        // Fallback 1: TIOCSTI on the locator tty — no permission needed.
+        if AXIsProcessTrusted(), postCGEvent(digits: n) { return }
         let text = "\(n)\n"
-        if let tty, !tty.isEmpty, writeViaTIOCSTI(tty: tty, text: text) {
-            NSLog("vibeclone: keystroke via TIOCSTI on \(tty)")
-            return
-        }
-        // Fallback 2: AppleScript System Events.
-        NSLog("vibeclone: keystroke via osascript fallback")
+        if let tty, !tty.isEmpty, writeViaTIOCSTI(tty: tty, text: text) { return }
         writeViaOSAScript(digits: n)
     }
 
@@ -46,8 +34,11 @@ enum KeystrokeInjector {
             let down = CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: true),
             let up   = CGEvent(keyboardEventSource: src, virtualKey: key, keyDown: false)
         else { return false }
-        down.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
+        // .cgAnnotatedSessionEventTap = above app-key routing but below WindowServer
+        // hit-test — surveyed mac tools find it more reliable than cghidEventTap
+        // for delivering keys to a specific app's focused window.
+        down.post(tap: .cgAnnotatedSessionEventTap)
+        up.post(tap: .cgAnnotatedSessionEventTap)
         return true
     }
 

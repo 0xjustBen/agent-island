@@ -12,7 +12,7 @@ struct VibeCloneApp: App {
             if count > 0 {
                 Image(systemName: "hexagon.fill")
             } else {
-                Image(systemName: "hexagongrid")
+                Image(systemName: "hexagon")
             }
         }
         .menuBarExtraStyle(.window)
