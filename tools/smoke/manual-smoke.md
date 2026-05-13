@@ -45,3 +45,34 @@ Parity-checked against Vibe Island v1.0.33 behavior.
 - Quit VibeClone
 - `rm -rf /Applications/VibeClone.app ~/.vibeclone /tmp/vibeclone.sock`
 - `cp /tmp/settings.before-smoke.json ~/.claude/settings.json` (restore)
+
+---
+
+## Phase 2 additions
+
+### Floating panel
+23. After launch, floating panel visible at top center: pill shape when no pending requests.
+24. On notch Macs: pill anchored just below camera notch. On non-notch: floating bar below menu bar.
+25. Set `prefs.displayMode` via popover picker. "Menu only" hides panel; "Notch" / "Bar" show it.
+
+### Pending expansion
+26. Trigger `claude -p "use Bash to echo hi"`. Panel expands from pill to card showing source / tool / command + Approve / Deny / Jump within 200 ms.
+27. Approve from panel → claude proceeds, panel collapses back to pill within 200 ms.
+28. Two simultaneous requests → panel shows top request plus "+1 more" badge.
+
+### Sounds
+29. With `prefs.soundsEnabled = true`, PermissionRequest fires permission sound. Toggle off → silent.
+30. Replace bundled sound: `cp ~/Music/myown.aiff ~/.vibeclone/custom-sounds/permission.aiff`. Next request plays the custom file.
+
+### Markdown plan preview
+31. When CC payload carries `tool_input.plan` (string > 20 chars), RequestRow's "Plan preview" disclosure renders markdown (bold / italic / code / headers).
+32. Same plan text shows inline in NotchView expanded card with markdown styling.
+
+### Hotkey
+33. Press ⌃⇧V from any app. First time: System Settings → Privacy → Accessibility prompt. Grant. Subsequent presses focus VibeClone + refresh panel.
+
+### Display mode switching
+34. Toggle picker: panel switches notch ↔ bar ↔ hidden in < 200 ms.
+
+### Zero-telemetry recheck (Phase 2)
+35. With panel/sounds/hotkey active: `lsof -i -P | grep VibeClone | grep -v LISTEN` → still no outbound TCP. No Sentry, no analytics.
