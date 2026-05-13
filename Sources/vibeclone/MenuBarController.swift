@@ -26,6 +26,7 @@ final class MenuBarController {
     private var refreshTask: Task<Void, Never>?
     private(set) var panelController: PanelController!
     private(set) var soundPlayer: SoundPlayer!
+    private(set) var hotkeyMonitor: HotkeyMonitor?
     private var lastPendingCount: Int = -1
 
     init() {
@@ -84,6 +85,17 @@ final class MenuBarController {
 
         panelController.updateForMode(prefs.displayMode)
 
+        if prefs.hotkeyEnabled {
+            let mon = HotkeyMonitor { [weak self] in
+                guard let self else { return }
+                // Force panel to non-menubar mode briefly to show pending.
+                self.panelController?.refresh()
+                NSApp.activate(ignoringOtherApps: true)
+            }
+            mon.start()
+            self.hotkeyMonitor = mon
+        }
+
         refreshTask = Task { [weak self] in
             while !Task.isCancelled {
                 guard let self else { return }
@@ -137,6 +149,7 @@ final class MenuBarController {
     func shutdown() {
         // Mark clean exit + stop everything.
         refreshTask?.cancel()
+        hotkeyMonitor?.stop()
         installer.stop()
         server.stop()
         let lastrun: [String: Any] = [
